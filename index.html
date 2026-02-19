@@ -3,299 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OGmessenger</title>
+    <title>OGmessenger | Secure Chat</title>
     <style>
+        :root {
+            --primary: #6200ee;
+            --primary-dark: #3700b3;
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --text: #ffffff;
+            --text-dim: #b0b0b0;
+        }
+
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            justify-content: center;
             align-items: center;
         }
+
         .container {
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #1e1e1e;
+            max-width: 450px;
+            height: 100%;
+            background-color: var(--surface);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            align-items: center;
         }
+
         header {
-            background-color: #1e1e1e;
             padding: 15px;
             text-align: center;
             border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
         #messageContainer {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            border-bottom: 1px solid #333;
-        }
-        #messageInput {
             display: flex;
-            padding: 10px;
-            background-color: #1e1e1e;
-            border-top: 1px solid #333;
+            flex-direction: column;
+            gap: 10px;
         }
-        #inputField, #phoneField, #passwordField, #friendBarcodeField {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #333;
-            background-color: #222;
-            color: #fff;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        #sendButton, #loginButton, #searchButton {
-            padding: 10px 15px;
-            background-color: #6200ee;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        #sendButton:hover, #loginButton:hover, #searchButton:hover {
-            background-color: #3700b3;
-        }
+
         .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
         }
+
         .sent {
-            background-color: #6200ee;
+            background-color: var(--primary);
             align-self: flex-end;
+            border-bottom-right-radius: 2px;
         }
+
         .received {
             background-color: #333;
             align-self: flex-start;
+            border-bottom-left-radius: 2px;
         }
-        .logo {
-            font-size: 40px;
-            font-weight: bold;
-            color: #6200ee;
-            margin-bottom: 20px;
+
+        .timestamp {
+            font-size: 10px;
+            display: block;
+            margin-top: 5px;
+            color: var(--text-dim);
         }
-        .barcode {
-            margin: 20px 0;
-            background-color: #fff;
-            width: 100%;
-            height: 100px;
+
+        .input-area {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: #000;
-            border: 2px dashed #6200ee;
+            padding: 15px;
+            background-color: #252525;
+            gap: 10px;
         }
-        select {
-            padding: 10px;
+
+        input, select {
+            padding: 12px;
             border: 1px solid #333;
-            background-color: #222;
+            background-color: #2c2c2c;
             color: #fff;
-            border-radius: 5px;
-            margin-top: 10px;
-            width: 100%;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: var(--primary-dark); }
+        
+        .screen { display: none; flex-direction: column; height: 100%; padding: 20px; box-sizing: border-box; }
+        .active { display: flex; }
+
+        .logo { font-size: 48px; font-weight: bold; color: var(--primary); margin-bottom: 10px; text-align: center; }
+        .barcode-box {
+            background: #fff; color: #000; padding: 20px; margin: 20px 0;
+            text-align: center; font-family: monospace; font-size: 24px; letter-spacing: 5px;
+            border-radius: 8px; border: 4px solid var(--primary);
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="loginContainer">
+<div class="container">
+    <div id="loginScreen" class="screen active">
         <div class="logo">OG</div>
-        <h2>OGmessenger</h2>
+        <h2 style="text-align: center;">Welcome Back</h2>
         <select id="countrySelect">
-            <option value="" disabled selected>Select your country</option>
             <option value="249">Sudan (+249)</option>
             <option value="966">Saudi Arabia (+966)</option>
         </select>
-        <input type="text" id="phoneField" placeholder="Enter your phone number" />
-        <input type="password" id="passwordField" placeholder="Create a password" />
-        <button id="loginButton">Login</button>
+        <input type="text" id="phoneField" placeholder="Phone Number (e.g. 5xxxxxxx)" style="margin-top:10px;">
+        <input type="password" id="passwordField" placeholder="Password" style="margin-top:10px;">
+        <button id="loginButton" style="margin-top:20px;">Get Started</button>
     </div>
 
-    <header id="appHeader" style="display: none;">
-        <h1>OGmessenger</h1>
-    </header>
-
-    <div id="messageContainer" style="display: none;"></div>
-
-    <div id="messageInput" style="display: none;">
-        <input type="text" id="inputField" placeholder="Type your message..." />
-        <button id="sendButton">Send</button>
+    <div id="profileScreen" class="screen">
+        <header>
+            <span>My Profile</span>
+            <button onclick="logout()" style="padding:5px 10px; font-size:12px;">Logout</button>
+        </header>
+        <h3>Your ID Barcode:</h3>
+        <div class="barcode-box" id="myBarcode">--------</div>
+        <button id="viewMessagesBtn" style="margin-bottom:10px;">Open Chats</button>
+        <button id="findFriendsBtn" class="secondary">Find Friend by Barcode</button>
     </div>
 
-    <div id="profileContainer" style="display: none;">
-        <h3>Your Profile</ h3>
-        <div class="barcode" id="barcode"></div>
-        <button id="viewMessagesButton">View Messages</button>
-        <button id="findFriendsButton">Find Friends</button>
+    <div id="chatScreen" class="screen" style="padding:0;">
+        <header>
+            <button onclick="showScreen('profileScreen')">← Back</button>
+            <span id="chatWith">Global Chat</span>
+            <div style="width:40px;"></div>
+        </header>
+        <div id="messageContainer"></div>
+        <div class="input-area">
+            <input type="text" id="inputField" placeholder="Message..." style="flex:1;">
+            <button id="sendButton">Send</button>
+        </div>
     </div>
+</div>
 
-    <div id="friendSearchContainer" style="display: none;">
-        <h3>Find Friends</h3>
-        <input type="text" id="friendBarcodeField" placeholder="Enter friend's barcode" />
-        <button id="searchButton">Search</button>
-    </div>
+<script>
+    // --- Data Management ---
+    let users = JSON.parse(localStorage.getItem('og_users')) || {};
+    let currentUser = null;
 
-    <script>
-        const loginContainer = document.getElementById('loginContainer');
-        const appHeader = document.getElementById('appHeader');
-        const messageContainer = document.getElementById('messageContainer');
-        const messageInput = document.getElementById('messageInput');
-        const inputField = document.getElementById('inputField');
-        const sendButton = document.getElementById('sendButton');
-        const phoneField = document.getElementById('phoneField');
-        const loginButton = document.getElementById('loginButton');
-        const countrySelect = document.getElementById('countrySelect');
-        const passwordField = document.getElementById('passwordField');
-        const profileContainer = document.getElementById('profileContainer');
-        const barcodeDiv = document.getElementById('barcode');
-        const friendSearchContainer = document.getElementById('friendSearchContainer');
-        const friendBarcodeField = document.getElementById('friendBarcodeField');
-        const searchButton = document.getElementById('searchButton');
-        const viewMessagesButton = document.getElementById('viewMessagesButton');
-        const findFriendsButton = document.getElementById('findFriendsButton');
+    const showScreen = (id) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    };
 
-        // Mock database
-        let users = {};
-        let currentUser = null;
+    // --- Auth Logic ---
+    document.getElementById('loginButton').addEventListener('click', () => {
+        const code = document.getElementById('countrySelect').value;
+        const phone = document.getElementById('phoneField').value.trim();
+        const pass = document.getElementById('passwordField').value.trim();
 
-        // Show the login form
-        loginContainer.style.display = 'flex';
+        if (!phone || !pass) return alert("Fill all fields");
+        
+        // Basic Regex Fix
+        const isValid = (code === '966') ? /^5\d{8}$/.test(phone) : /^\d{9}$/.test(phone);
+        if(!isValid) return alert("Invalid phone format for selected country");
 
-        loginButton.addEventListener('click', () => {
-            const countryCode = countrySelect.value;
-            const phoneNumber = phoneField.value.trim();
-            const password = passwordField.value.trim();
+        const fullPhone = `+${code}${phone}`;
 
-            if (!countryCode) {
-                alert('Please select your country.');
-                return;
-            }
-            if (!isValidPhoneNumber(phoneNumber, countryCode)) {
-                alert('Please enter a valid phone number.');
-                return;
-            }
-            if (!password) {
-                alert('Please create a password.');
-                return;
-            }
-
-            const fullPhoneNumber = `+${countryCode}${phoneNumber}`;
-            const barcode = generateBarcode();
-
-            // Check if user exists, if not create a new user
-            if (!users[fullPhoneNumber]) {
-                users[fullPhoneNumber] = { messages: [], password: password, barcode: barcode };
-            } else if (users[fullPhoneNumber].password !== password) {
-                alert('Incorrect password.');
-                return;
-            }
-            currentUser = fullPhoneNumber;
-
-            // Hide login and show user profile
-            loginContainer.style.display = 'none';
-            appHeader.style.display = 'block';
-            profileContainer.style.display = 'block';
-            barcodeDiv.textContent = users[currentUser].barcode;
-
-            // Load previous messages
-            loadMessages();
-        });
-
-        sendButton.addEventListener('click', () => {
-            const messageText = inputField.value.trim();
-            if (messageText === '') return;
-
-            // Store the message in the user's mock database
-            users[currentUser].messages.push({ text: messageText, type: 'sent' });
-
-            // Display the sent message
-            displayMessage(messageText, 'sent');
-            inputField.value = '';
-            messageContainer.scrollTop = messageContainer.scrollHeight;
-        });
-
-        viewMessagesButton.addEventListener('click', () => {
-            messageContainer.style.display = 'block';
-            messageInput.style.display = 'block';
-            profileContainer.style.display = 'none';
-        });
-
-        findFriendsButton.addEventListener('click', () => {
-            friendSearchContainer.style.display = 'block';
-            profileContainer.style.display = 'none';
-        });
-
-        searchButton.addEventListener('click', () => {
-            const friendBarcode = friendBarcodeField.value.trim();
-            if (!friendBarcode) {
-                alert('Please enter a barcode.');
-                return;
-            }
-
-            // Search for the friend in the users object
-            for (const phoneNumber of Object.keys(users)) {
-                if (users[phoneNumber].barcode === friendBarcode) {
-                    // Friend found, you can now display their profile or start a chat with them
-                    alert(`Friend ${phoneNumber} found!`);
-                    // Add code to display friend's profile or start a chat
-                    return;
-                }
-            }
-
-            alert('Friend not found.');
-        });
-
-        function displayMessage(text, type) {
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${type}`;
-            messageElement.textContent = text;
-            messageContainer.appendChild(messageElement);
+        if (!users[fullPhone]) {
+            users[fullPhone] = { 
+                password: pass, 
+                barcode: Math.random().toString(36).substring(2, 9).toUpperCase(),
+                messages: [] 
+            };
+            saveData();
+        } else if (users[fullPhone].password !== pass) {
+            return alert("Wrong password");
         }
 
-        function loadMessages() {
-            const messages = users[currentUser].messages;
-            messageContainer.innerHTML = ''; // Clear previous messages
-            messages.forEach(msg => {
-                displayMessage(msg.text, msg.type);
-            });
-        }
+        currentUser = fullPhone;
+        document.getElementById('myBarcode').textContent = users[currentUser].barcode;
+        showScreen('profileScreen');
+    });
 
-        function isValidPhoneNumber(phoneNumber, countryCode) {
-            const sudanRegex = /^[1-9]\d{8}$/; // 9 digits
-            const saudiRegex = /^5 \d{8}$/; // 9 digits starting with 5
-            if (countryCode === '249') {
-                return sudanRegex.test(phoneNumber);
-            } else if (countryCode === '966') {
-                return saudiRegex.test(phoneNumber);
-            }
-            return false;
-        }
+    function logout() {
+        currentUser = null;
+        showScreen('loginScreen');
+    }
 
-        function generateBarcode() {
-            return Math.random().toString(36).substring(2, 10).toUpperCase(); // Generate a random barcode
-        }
+    // --- Messaging Logic ---
+    function displayMessage(text, type, time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})) {
+        const container = document.getElementById('messageContainer');
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.innerHTML = `${text} <span class="timestamp">${time}</span>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
 
-        // For demonstration, adding a sample received message
-        function addSampleReceivedMessage() {
-            const receivedMessage = 'Hello! This is a received message.';
-            users[currentUser].messages.push({ text: receivedMessage, type: 'received' });
-            displayMessage(receivedMessage, 'received');
-        }
+    document.getElementById('sendButton').addEventListener('click', () => {
+        const text = document.getElementById('inputField').value.trim();
+        if (!text) return;
 
-        // Call this function to add a sample message
-        addSampleReceivedMessage();
-    </script>
+        const msgObj = { text, type: 'sent', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+        users[currentUser].messages.push(msgObj);
+        displayMessage(text, 'sent', msgObj.time);
+        
+        document.getElementById('inputField').value = '';
+        saveData();
+
+        // Simulate a reply
+        setTimeout(() => {
+            const reply = "Got your message!";
+            users[currentUser].messages.push({ text: reply, type: 'received', time: 'Just now' });
+            displayMessage(reply, 'received', 'Just now');
+            saveData();
+        }, 1000);
+    });
+
+    document.getElementById('viewMessagesBtn').addEventListener('click', () => {
+        const container = document.getElementById('messageContainer');
+        container.innerHTML = '';
+        users[currentUser].messages.forEach(m => displayMessage(m.text, m.type, m.time));
+        showScreen('chatScreen');
+    });
+
+    document.getElementById('findFriendsBtn').addEventListener('click', () => {
+        const target = prompt("Enter Friend's Barcode:");
+        const friend = Object.keys(users).find(u => users[u].barcode === target);
+        if(friend) alert("Found friend: " + friend + ". You can now chat!");
+        else alert("User not found.");
+    });
+
+    function saveData() {
+        localStorage.setItem('og_users', JSON.stringify(users));
+    }
+</script>
+
 </body>
 </html>
