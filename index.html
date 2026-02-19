@@ -65,27 +65,41 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCMOPAdlI7vsDN_qBf5a481rDhshmfnmbQN87t4myPnH1JYPcMBB8dY8P3EhKBv6qd/exec';
+   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFv4d2f93NOTxWCEu6FXyiZtv5jV4SlbBGROCjzPOq8R0RC1B2s0KIKkmVcCXU8Hbq/exec';
     let currentUser = null;
     let currentPartner = null;
     let refreshInterval = null;
 
-   async function api(payload) {
-    const response = await fetch(SCRIPT_URL, {
-        method: "POST",
-        // Changing to text/plain avoids the CORS 'preflight' error
-        headers: {
-            "Content-Type": "text/plain;charset=utf-8" 
-        },
-        body: JSON.stringify(payload),
-        redirect: "follow" 
+    // Support for Enter key in chat
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendPrivateMessage();
     });
-    return await response.json();
-}
+
+    async function api(payload) {
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload),
+                redirect: "follow"
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            return await response.json();
+        } catch (e) {
+            console.error("API Error:", e);
+            throw e;
+        }
+    }
 
     async function handleLogin() {
         const identifier = document.getElementById('idInput').value;
         const password = document.getElementById('passInput').value;
+        const btn = document.querySelector('#loginScreen button');
+        
+        btn.innerText = "Verifying...";
+        btn.disabled = true;
+
         try {
             const res = await api({ action: "login", identifier, password });
             if(res.status === "success") {
@@ -94,15 +108,27 @@
                 document.getElementById('navBar').style.display = 'flex';
                 switchTab('roomsScreen');
             } else { alert(res.message); }
-        } catch (e) { alert("Network Error: Check deployment."); }
+        } catch (e) { 
+            alert("Network Error: Ensure the Script is deployed to 'Anyone'."); 
+        } finally {
+            btn.innerText = "Login";
+            btn.disabled = false;
+        }
     }
 
     function switchTab(screenId) {
-        // Clear interval whenever switching tabs to save data/battery
         if (refreshInterval) clearInterval(refreshInterval);
         
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
+
+        // Update Nav UI
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active-nav');
+            if(item.innerText.toLowerCase() === screenId.replace('Screen', '')) {
+                item.classList.add('active-nav');
+            }
+        });
         
         if(screenId === 'roomsScreen') loadRooms();
         if(screenId === 'profilesScreen') loadProfiles();
@@ -110,20 +136,31 @@
     }
 
     async function loadRooms() {
-        const res = await api({ action: "getRooms" });
-        const list = document.getElementById('roomList');
-        list.innerHTML = res.rooms.map(r => `<div class="card">🏠 ${r[0]} <button style="float:right">Join</button></div>`).join('');
+        try {
+            const res = await api({ action: "getRooms" });
+            const list = document.getElementById('roomList');
+            list.innerHTML = res.rooms.map(r => `
+                <div class="card">
+                    <span>🏠 ${r[0]}</span>
+                    <button style="float:right; padding: 5px 10px;" onclick="alert('Room joined!')">Join</button>
+                </div>`).join('');
+        } catch(e) {}
     }
 
     async function loadProfiles() {
-        const res = await api({ action: "getProfiles" });
-        const list = document.getElementById('profileList');
-        list.innerHTML = res.profiles.map(p => `
-            <div class="card">
-                <b>${p.name}</b><br><small>${p.job}</small>
-                <button onclick="startChat('${p.phone}', '${p.name}')" style="display:block; margin-top:10px; padding:5px; width:100%">Message</button>
-            </div>
-        `).join('');
+        try {
+            const res = await api({ action: "getProfiles" });
+            const list = document.getElementById('profileList');
+            // Filter out the current user so they don't chat with themselves
+            list.innerHTML = res.profiles
+                .filter(p => p.phone != currentUser.phone)
+                .map(p => `
+                <div class="card">
+                    <b>${p.name}</b><br><small style="color:var(--primary)">${p.job}</small>
+                    <button onclick="startChat('${p.phone}', '${p.name}')" style="display:block; margin-top:10px; padding:5px; width:100%">Message</button>
+                </div>
+            `).join('');
+        } catch(e) {}
     }
 
     function startChat(phone, name) {
@@ -133,8 +170,8 @@
     }
 
     function startRefreshingChat() {
-        loadMessages(); // Load immediately
-        refreshInterval = setInterval(loadMessages, 3000); // Then every 3s
+        loadMessages();
+        refreshInterval = setInterval(loadMessages, 3000); 
     }
 
     async function loadMessages() {
@@ -143,13 +180,18 @@
             const res = await api({ action: "getMessages", me: currentUser.phone, partner: currentPartner });
             if(res.status === "success") {
                 const chatBox = document.getElementById('chatBox');
-                chatBox.innerHTML = res.messages.map(m => `
+                const oldContent = chatBox.innerHTML;
+                const newContent = res.messages.map(m => `
                     <div class="msg ${m.sender == currentUser.phone ? 'me' : 'them'}">
                         ${m.text}
                         <div style="font-size:9px; opacity:0.6; margin-top:4px;">${m.time}</div>
                     </div>
                 `).join('');
-                chatBox.scrollTop = chatBox.scrollHeight;
+                
+                if (oldContent !== newContent) {
+                    chatBox.innerHTML = newContent;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
             }
         } catch (e) { console.error("Chat Refresh Error"); }
     }
@@ -159,13 +201,18 @@
         const text = input.value.trim();
         if(!text || !currentPartner) return;
 
+        const originalPlaceholder = input.placeholder;
+        input.placeholder = "Sending...";
+        input.value = "";
         input.disabled = true;
+
         try {
             await api({ action: "sendMessage", sender: currentUser.phone, receiver: currentPartner, text: text });
-            input.value = "";
-            loadMessages(); // Refresh UI immediately
+            loadMessages(); 
         } catch (e) { alert("Failed to send"); }
+        
         input.disabled = false;
+        input.placeholder = originalPlaceholder;
         input.focus();
     }
 </script>
