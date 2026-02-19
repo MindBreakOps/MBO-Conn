@@ -3,257 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OGmessenger | Secure Chat</title>
+    <title>MBO-CON Connect</title>
     <style>
-        :root {
-            --primary: #6200ee;
-            --primary-dark: #3700b3;
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --text: #ffffff;
-            --text-dim: #b0b0b0;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            align-items: center;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 450px;
-            height: 100%;
-            background-color: var(--surface);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
-
-        header {
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #messageContainer {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            line-height: 1.4;
-            position: relative;
-        }
-
-        .sent {
-            background-color: var(--primary);
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-
-        .received {
-            background-color: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-
-        .timestamp {
-            font-size: 10px;
-            display: block;
-            margin-top: 5px;
-            color: var(--text-dim);
-        }
-
-        .input-area {
-            display: flex;
-            padding: 15px;
-            background-color: #252525;
-            gap: 10px;
-        }
-
-        input, select {
-            padding: 12px;
-            border: 1px solid #333;
-            background-color: #2c2c2c;
-            color: #fff;
-            border-radius: 8px;
-            outline: none;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: var(--primary);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        button:hover { background-color: var(--primary-dark); }
+        :root { --primary: #00e5ff; --bg: #0b0f19; --surface: #161b2c; --text: #ffffff; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .app { width: 100%; max-width: 450px; background: var(--surface); display: flex; flex-direction: column; position: relative; }
         
-        .screen { display: none; flex-direction: column; height: 100%; padding: 20px; box-sizing: border-box; }
+        /* Screens */
+        .screen { display: none; flex-direction: column; height: 100%; padding: 30px; box-sizing: border-box; }
         .active { display: flex; }
 
-        .logo { font-size: 48px; font-weight: bold; color: var(--primary); margin-bottom: 10px; text-align: center; }
-        .barcode-box {
-            background: #fff; color: #000; padding: 20px; margin: 20px 0;
-            text-align: center; font-family: monospace; font-size: 24px; letter-spacing: 5px;
-            border-radius: 8px; border: 4px solid var(--primary);
-        }
+        /* Styling */
+        .logo { font-size: 32px; font-weight: 900; color: var(--primary); text-align: center; margin-bottom: 5px; }
+        .sub-logo { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 40px; }
+        
+        input { background: #242b42; border: 1px solid #334155; color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; outline: none; }
+        button { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+
+        .profile-card { background: #1f2937; padding: 20px; border-radius: 15px; border-left: 5px solid var(--primary); margin-bottom: 20px; }
+        .badge { background: var(--primary); color: #000; font-size: 10px; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
+        
+        .room-item { background: #242b42; padding: 15px; margin-top: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app">
     <div id="loginScreen" class="screen active">
-        <div class="logo">OG</div>
-        <h2 style="text-align: center;">Welcome Back</h2>
-        <select id="countrySelect">
-            <option value="249">Sudan (+249)</option>
-            <option value="966">Saudi Arabia (+966)</option>
-        </select>
-        <input type="text" id="phoneField" placeholder="Phone Number (e.g. 5xxxxxxx)" style="margin-top:10px;">
-        <input type="password" id="passwordField" placeholder="Password" style="margin-top:10px;">
-        <button id="loginButton" style="margin-top:20px;">Get Started</button>
+        <div class="logo">MBO-CON</div>
+        <div class="sub-logo">SYSTEM ACCESS</div>
+        <input type="text" id="idInput" placeholder="Email or Phone No.">
+        <input type="password" id="passInput" placeholder="Password">
+        <button id="loginBtn">LOG IN</button>
+        <p id="msg" style="color:#ff4b4b; font-size:12px; text-align:center;"></p>
     </div>
 
-    <div id="profileScreen" class="screen">
-        <header>
-            <span>My Profile</span>
-            <button onclick="logout()" style="padding:5px 10px; font-size:12px;">Logout</button>
-        </header>
-        <h3>Your ID Barcode:</h3>
-        <div class="barcode-box" id="myBarcode">--------</div>
-        <button id="viewMessagesBtn" style="margin-bottom:10px;">Open Chats</button>
-        <button id="findFriendsBtn" class="secondary">Find Friend by Barcode</button>
-    </div>
-
-    <div id="chatScreen" class="screen" style="padding:0;">
-        <header>
-            <button onclick="showScreen('profileScreen')">← Back</button>
-            <span id="chatWith">Global Chat</span>
-            <div style="width:40px;"></div>
-        </header>
-        <div id="messageContainer"></div>
-        <div class="input-area">
-            <input type="text" id="inputField" placeholder="Message..." style="flex:1;">
-            <button id="sendButton">Send</button>
-        </div>
+    <div id="dashScreen" class="screen">
+        <div id="userHeader"></div>
+        <h3 style="margin-top:30px">Available Rooms</h3>
+        <div id="roomList"></div>
+        <button onclick="location.reload()" style="margin-top:auto; background:#ff4b4b; color:white;">LOGOUT</button>
     </div>
 </div>
 
 <script>
-    // --- Data Management ---
-    let users = JSON.parse(localStorage.getItem('og_users')) || {};
-    let currentUser = null;
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxP_sVS2col1RIEt-giQZ-qKwr6Oa-3OOJvA_s-zmX3S1Dm48KpTckfgBtldFOZx4Nr/exec'; 
 
-    const showScreen = (id) => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    };
-
-    // --- Auth Logic ---
-    document.getElementById('loginButton').addEventListener('click', () => {
-        const code = document.getElementById('countrySelect').value;
-        const phone = document.getElementById('phoneField').value.trim();
-        const pass = document.getElementById('passwordField').value.trim();
-
-        if (!phone || !pass) return alert("Fill all fields");
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const identifier = document.getElementById('idInput').value;
+        const password = document.getElementById('passInput').value;
+        const btn = document.getElementById('loginBtn');
         
-        // Basic Regex Fix
-        const isValid = (code === '966') ? /^5\d{8}$/.test(phone) : /^\d{9}$/.test(phone);
-        if(!isValid) return alert("Invalid phone format for selected country");
+        btn.innerText = "VERIFYING...";
+        btn.disabled = true;
 
-        const fullPhone = `+${code}${phone}`;
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', identifier, password })
+            });
+            const data = await response.json();
 
-        if (!users[fullPhone]) {
-            users[fullPhone] = { 
-                password: pass, 
-                barcode: Math.random().toString(36).substring(2, 9).toUpperCase(),
-                messages: [] 
-            };
-            saveData();
-        } else if (users[fullPhone].password !== pass) {
-            return alert("Wrong password");
+            if (data.status === "success") {
+                loadDashboard(data.user);
+            } else {
+                document.getElementById('msg').innerText = data.message;
+            }
+        } catch (e) {
+            document.getElementById('msg').innerText = "Network Error: Check URL or CORS settings.";
         }
-
-        currentUser = fullPhone;
-        document.getElementById('myBarcode').textContent = users[currentUser].barcode;
-        showScreen('profileScreen');
+        btn.innerText = "LOG IN";
+        btn.disabled = false;
     });
 
-    function logout() {
-        currentUser = null;
-        showScreen('loginScreen');
-    }
-
-    // --- Messaging Logic ---
-    function displayMessage(text, type, time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})) {
-        const container = document.getElementById('messageContainer');
-        const div = document.createElement('div');
-        div.className = `message ${type}`;
-        div.innerHTML = `${text} <span class="timestamp">${time}</span>`;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    document.getElementById('sendButton').addEventListener('click', () => {
-        const text = document.getElementById('inputField').value.trim();
-        if (!text) return;
-
-        const msgObj = { text, type: 'sent', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
-        users[currentUser].messages.push(msgObj);
-        displayMessage(text, 'sent', msgObj.time);
+    function loadDashboard(user) {
+        document.getElementById('loginScreen').classList.remove('active');
+        document.getElementById('dashScreen').classList.add('active');
         
-        document.getElementById('inputField').value = '';
-        saveData();
+        document.getElementById('userHeader').innerHTML = `
+            <div class="profile-card">
+                <span class="badge">${user.type}</span>
+                <h2 style="margin:10px 0 0 0">${user.name}</h2>
+                <div style="color:var(--primary); font-weight:bold">${user.job}</div>
+                <div style="font-size:12px; margin-top:10px; color:#94a3b8">
+                    ID: ${user.phone}
+                </div>
+            </div>
+        `;
+        fetchRooms();
+    }
 
-        // Simulate a reply
-        setTimeout(() => {
-            const reply = "Got your message!";
-            users[currentUser].messages.push({ text: reply, type: 'received', time: 'Just now' });
-            displayMessage(reply, 'received', 'Just now');
-            saveData();
-        }, 1000);
-    });
-
-    document.getElementById('viewMessagesBtn').addEventListener('click', () => {
-        const container = document.getElementById('messageContainer');
-        container.innerHTML = '';
-        users[currentUser].messages.forEach(m => displayMessage(m.text, m.type, m.time));
-        showScreen('chatScreen');
-    });
-
-    document.getElementById('findFriendsBtn').addEventListener('click', () => {
-        const target = prompt("Enter Friend's Barcode:");
-        const friend = Object.keys(users).find(u => users[u].barcode === target);
-        if(friend) alert("Found friend: " + friend + ". You can now chat!");
-        else alert("User not found.");
-    });
-
-    function saveData() {
-        localStorage.setItem('og_users', JSON.stringify(users));
+    async function fetchRooms() {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getRooms' })
+        });
+        const data = await response.json();
+        const list = document.getElementById('roomList');
+        list.innerHTML = data.rooms.map(r => `
+            <div class="room-item">
+                <span>🏠 ${r[0]}</span>
+                <button style="padding:5px 10px; font-size:10px">JOIN</button>
+            </div>
+        `).join('');
     }
 </script>
-
 </body>
 </html>
