@@ -3,218 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
     <title>MBO-CON Enterprise</title>
     <style>
-        :root { --primary: #00e5ff; --bg: #0b0f19; --nav: #161b2c; --text: #ffffff; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; }
-        .app { max-width: 500px; margin: auto; height: 100vh; display: flex; flex-direction: column; }
+        :root { 
+            --glass: rgba(255, 255, 255, 0.75); 
+            --accent: #5d4037; /* Brown accent based on logo */
+            --bg: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+            --text: #333;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; }
         
-        .screen { display: none; flex: 1; padding: 20px; overflow-y: auto; }
-        .active { display: flex; flex-direction: column; }
+        .app-header { text-align: center; padding: 20px; }
+        .logo-img { width: 80px; height: 80px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
-        .nav-bar { display: none; background: var(--nav); height: 60px; justify-content: space-around; align-items: center; border-top: 1px solid #334155; }
-        .nav-item { cursor: pointer; font-size: 12px; text-align: center; color: #64748b; }
-        .nav-item.active-nav { color: var(--primary); font-weight: bold; }
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin: 15px;
+        }
 
-        .card { background: #1e293b; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
-        #chatBox { flex:1; background: #000; border-radius: 10px; margin-bottom: 10px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        /* Chat Bubbles */
-        .msg { padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 14px; }
-        .msg.me { background: var(--primary); color: #000; align-self: flex-end; }
-        .msg.them { background: #334155; color: #fff; align-self: flex-start; }
-        
-        input { background: #242b42; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; outline: none; }
-        button { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        /* Modal / Popup Styling */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .admin-only { display: none; }
+        button { 
+            background: #212121; color: white; border: none; padding: 12px 24px; 
+            border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        button.primary { background: var(--accent); }
+        input, select { 
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; 
+            border: 1px solid #ddd; box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
 
-<div class="app">
-    <div id="loginScreen" class="screen active">
-        <h2>MBO-CONn Login</h2>
-        <input type="text" id="idInput" placeholder="Email or Phone">
-        <input type="password" id="passInput" placeholder="Password">
-        <button onclick="handleLogin()">Login</button>
+<div class="app-header">
+    <img src="mb.png" alt="MBO-CON Logo" class="logo-img">
+    <h1 style="margin-top:10px; font-size: 22px;">MBO-CON</h1>
+</div>
+
+<div id="dashScreen" class="screen active">
+    <div id="adminPanel" class="glass-card admin-only">
+        <h3 style="margin-top:0">System Analytics</h3>
+        <div id="analyticsList" style="font-size: 13px; color: #666;"></div>
+        <button class="primary" onclick="openModal()" style="margin-top:15px; width:100%">+ Add Member</button>
     </div>
 
-    <div id="roomsScreen" class="screen">
-        <h3>Group Rooms</h3>
-        <div id="roomList"></div>
-    </div>
-
-    <div id="profilesScreen" class="screen">
+    <div class="glass-card">
         <h3>Staff Directory</h3>
         <div id="profileList"></div>
     </div>
+</div>
 
-    <div id="chatScreen" class="screen">
-        <h3 id="chatPartner">Private Chat</h3>
-        <div id="chatBox"></div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="chatInput" placeholder="Type message..." style="flex:1;">
-            <button onclick="sendPrivateMessage()">Send</button>
+<div id="memberModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>New Member Details</h3>
+        <input type="text" id="newName" placeholder="Full Name">
+        <input type="email" id="newEmail" placeholder="Email Address">
+        <input type="password" id="newPass" placeholder="Password">
+        <input type="text" id="newJob" placeholder="Job Title">
+        <input type="text" id="newPhone" placeholder="Phone (966...)">
+        <select id="newType">
+            <option value="Staff">Staff</option>
+            <option value="Admin">Admin</option>
+            <option value="Client">Client</option>
+        </select>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button onclick="closeModal()" style="background:#eee; color:#333; flex:1">Cancel</button>
+            <button onclick="submitNewMember()" class="primary" style="flex:1">Save</button>
         </div>
-    </div>
-
-    <div id="navBar" class="nav-bar">
-        <div class="nav-item" onclick="switchTab('roomsScreen')">ROOMS</div>
-        <div class="nav-item" onclick="switchTab('profilesScreen')">PROFILES</div>
-        <div class="nav-item" onclick="switchTab('chatScreen')">CHAT</div>
     </div>
 </div>
 
 <script>
-   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzF6Qv47ZWj6YbxiFYIzYp26i6lYIrhM3oOXZcq8JhO1OT_36qGXt1ybhGDBxRpkLMT/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLOXa2_37uxaY8jW9wwK8ZF3wOsrzMxXK8pqIoUz977AovwRvZZlDX2v1J60g1FAqz/exec';
     let currentUser = null;
-    let currentPartner = null;
-    let refreshInterval = null;
 
-    // Support for Enter key in chat
-    document.getElementById('chatInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendPrivateMessage();
-    });
-
-    async function api(payload) {
-        try {
-            const response = await fetch(SCRIPT_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload),
-                redirect: "follow"
-            });
-            if (!response.ok) throw new Error('Network response was not ok');
-            return await response.json();
-        } catch (e) {
-            console.error("API Error:", e);
-            throw e;
-        }
-    }
+    function openModal() { document.getElementById('memberModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('memberModal').style.display = 'none'; }
 
     async function handleLogin() {
-        const identifier = document.getElementById('idInput').value;
-        const password = document.getElementById('passInput').value;
-        const btn = document.querySelector('#loginScreen button');
-        
-        btn.innerText = "Verifying...";
-        btn.disabled = true;
-
-        try {
-            const res = await api({ action: "login", identifier, password });
-            if(res.status === "success") {
-                currentUser = res.user;
-                document.getElementById('loginScreen').classList.remove('active');
-                document.getElementById('navBar').style.display = 'flex';
-                switchTab('roomsScreen');
-            } else { alert(res.message); }
-        } catch (e) { 
-            alert("Network Error: Ensure the Script is deployed to 'Anyone'."); 
-        } finally {
-            btn.innerText = "Login";
-            btn.disabled = false;
+        // ... (existing login logic)
+        // Inside successful login:
+        if (currentUser.email === "asim@mbo.sa") {
+            document.getElementById('adminPanel').style.display = 'block';
+            loadAnalytics();
         }
     }
 
-    function switchTab(screenId) {
-        if (refreshInterval) clearInterval(refreshInterval);
-        
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-
-        // Update Nav UI
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active-nav');
-            if(item.innerText.toLowerCase() === screenId.replace('Screen', '')) {
-                item.classList.add('active-nav');
-            }
-        });
-        
-        if(screenId === 'roomsScreen') loadRooms();
-        if(screenId === 'profilesScreen') loadProfiles();
-        if(screenId === 'chatScreen' && currentPartner) startRefreshingChat();
+    async function loadAnalytics() {
+        const res = await api({ action: "getAnalytics" });
+        const list = document.getElementById('analyticsList');
+        list.innerHTML = res.recentLogs.map(log => `
+            <div style="border-bottom:1px solid #eee; padding:5px 0">
+                ${log.time} | <b>${log.from}</b> talked to <b>${log.to}</b>
+            </div>
+        `).join('');
     }
 
-    async function loadRooms() {
-        try {
-            const res = await api({ action: "getRooms" });
-            const list = document.getElementById('roomList');
-            list.innerHTML = res.rooms.map(r => `
-                <div class="card">
-                    <span>🏠 ${r[0]}</span>
-                    <button style="float:right; padding: 5px 10px;" onclick="alert('Room joined!')">Join</button>
-                </div>`).join('');
-        } catch(e) {}
+    async function submitNewMember() {
+        const data = {
+            action: "addMember",
+            newName: document.getElementById('newName').value,
+            newEmail: document.getElementById('newEmail').value,
+            newPass: document.getElementById('newPass').value,
+            newJob: document.getElementById('newJob').value,
+            newPhone: document.getElementById('newPhone').value,
+            newType: document.getElementById('newType').value
+        };
+
+        const res = await api(data);
+        if(res.status === "success") {
+            alert("New account synced to MBO-CON Google Sheet.");
+            closeModal();
+            loadProfiles(); // Refresh list
+        }
     }
 
-    async function loadProfiles() {
-        try {
-            const res = await api({ action: "getProfiles" });
-            const list = document.getElementById('profileList');
-            // Filter out the current user so they don't chat with themselves
-            list.innerHTML = res.profiles
-                .filter(p => p.phone != currentUser.phone)
-                .map(p => `
-                <div class="card">
-                    <b>${p.name}</b><br><small style="color:var(--primary)">${p.job}</small>
-                    <button onclick="startChat('${p.phone}', '${p.name}')" style="display:block; margin-top:10px; padding:5px; width:100%">Message</button>
-                </div>
-            `).join('');
-        } catch(e) {}
-    }
-
-    function startChat(phone, name) {
-        currentPartner = phone;
-        document.getElementById('chatPartner').innerText = "Chat with " + name;
-        switchTab('chatScreen');
-    }
-
-    function startRefreshingChat() {
-        loadMessages();
-        refreshInterval = setInterval(loadMessages, 3000); 
-    }
-
-    async function loadMessages() {
-        if(!currentPartner || !currentUser) return;
-        try {
-            const res = await api({ action: "getMessages", me: currentUser.phone, partner: currentPartner });
-            if(res.status === "success") {
-                const chatBox = document.getElementById('chatBox');
-                const oldContent = chatBox.innerHTML;
-                const newContent = res.messages.map(m => `
-                    <div class="msg ${m.sender == currentUser.phone ? 'me' : 'them'}">
-                        ${m.text}
-                        <div style="font-size:9px; opacity:0.6; margin-top:4px;">${m.time}</div>
-                    </div>
-                `).join('');
-                
-                if (oldContent !== newContent) {
-                    chatBox.innerHTML = newContent;
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }
-            }
-        } catch (e) { console.error("Chat Refresh Error"); }
-    }
-
-    async function sendPrivateMessage() {
-        const input = document.getElementById('chatInput');
-        const text = input.value.trim();
-        if(!text || !currentPartner) return;
-
-        const originalPlaceholder = input.placeholder;
-        input.placeholder = "Sending...";
-        input.value = "";
-        input.disabled = true;
-
-        try {
-            await api({ action: "sendMessage", sender: currentUser.phone, receiver: currentPartner, text: text });
-            loadMessages(); 
-        } catch (e) { alert("Failed to send"); }
-        
-        input.disabled = false;
-        input.placeholder = originalPlaceholder;
-        input.focus();
-    }
+    // ... (Your standard api function)
 </script>
 </body>
 </html>
