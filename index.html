@@ -70,14 +70,18 @@
     let currentPartner = null;
     let refreshInterval = null;
 
-    async function api(payload) {
-        const response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload),
-            redirect: "follow"
-        });
-        return await response.json();
-    }
+   async function api(payload) {
+    const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        // Changing to text/plain avoids the CORS 'preflight' error
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8" 
+        },
+        body: JSON.stringify(payload),
+        redirect: "follow" 
+    });
+    return await response.json();
+}
 
     async function handleLogin() {
         const identifier = document.getElementById('idInput').value;
