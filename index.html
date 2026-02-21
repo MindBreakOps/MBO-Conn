@@ -261,29 +261,57 @@
 	voiceBtn.onclick = async () => {
 		if (!mediaRecorder || mediaRecorder.state === "inactive") {
 			try {
-				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				// Force a universal container format
+				// Force high-quality audio without "auto-fixes" that cause silence
+				const stream = await navigator.mediaDevices.getUserMedia({ 
+					audio: {
+						echoCancellation: false,
+						noiseSuppression: false,
+						autoGainControl: true // Keep this on to boost quiet voices
+					} 
+				});
+	
+				// Double-check the track is actually "live"
+				const audioTrack = stream.getAudioTracks()[0];
+				if (audioTrack.readyState !== "live") {
+					throw new Error("Audio track not active");
+				}
+	
 				const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
-				
 				mediaRecorder = new MediaRecorder(stream, { mimeType });
 				audioChunks = [];
 				
-				mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+				mediaRecorder.ondataavailable = e => { 
+					if (e.data.size > 0) audioChunks.push(e.data); 
+				};
+	
 				mediaRecorder.onstop = async () => {
 					const audioBlob = new Blob(audioChunks, { type: mimeType });
+					
+					// Stop the mic hardware completely after recording
+					stream.getTracks().forEach(track => track.stop());
+	
 					const reader = new FileReader();
 					reader.readAsDataURL(audioBlob);
 					reader.onloadend = async () => {
-						await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result });
+						await api({ 
+							action: "sendMessage", 
+							sender: user.name, 
+							receiver: partner, 
+							text: "🎤 Voice Note", 
+							media: reader.result 
+						});
 						loadMessages();
 					};
 				};
 	
-				mediaRecorder.start();
+				// Timeslice (1000ms) ensures data is captured every second
+				mediaRecorder.start(1000); 
 				voiceBtn.classList.add('recording');
 				voiceBtn.innerHTML = '<i data-lucide="square"></i>';
 				lucide.createIcons();
-			} catch (err) { alert("Mic Error: " + err.message); }
+			} catch (err) { 
+				alert("Mic Error: " + err.message); 
+			}
 		} else {
 			mediaRecorder.stop();
 			voiceBtn.classList.remove('recording');
@@ -291,7 +319,6 @@
 			lucide.createIcons();
 		}
 	};
-	
 	function toggleEmoji() { emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'grid' : 'none'; }
 	function addEmoji(e) { chatInput.value += e; toggleEmoji(); }
 	lucide.createIcons();
