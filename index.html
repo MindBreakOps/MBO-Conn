@@ -2,33 +2,52 @@
 <html lang="en">
 <head>
 	<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MBO-CON">
-<link rel="apple-touch-icon" href="mb.png">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="MBO-CON">
+	<link rel="apple-touch-icon" href="mb.png">
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>MBO-CON Enterprise</title>
 	<script src="https://unpkg.com/lucide@latest"></script>
 	<style>
 		:root { --glass: rgba(255, 255, 255, 0.9); --accent: #5d4037; --bg: #f4f7f6; }
-		body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; }
-		.app-container { width: 100%; max-width: 500px; min-height: 100vh; padding-bottom: 80px; position: relative; }
+		body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; overflow: hidden; }
+		.app-container { width: 100%; max-width: 500px; height: 100vh; position: relative; }
 		.glass-card { background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin: 15px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-		.screen { display: none; } .active { display: block; }
+		.screen { display: none; height: 100%; overflow-y: auto; padding-bottom: 90px; box-sizing: border-box; } 
+		.active { display: block; }
+		
+		/* Fixed Chat Screen Logic */
+		#chatScreen { display: none; height: 100vh; flex-direction: column; padding: 0; background: #fff; position: absolute; top: 0; width: 100%; z-index: 200; }
+		#chatScreen.active { display: flex; }
+		.chat-header-fixed { padding: 10px 15px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+		#chatBox { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #f0f2f5; }
+		.chat-input-bar { padding: 10px 15px; background: #fff; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 15px); }
+		
+		/* Emoji Picker Styling */
+		#emojiPicker { display: none; position: absolute; bottom: 70px; left: 15px; background: white; padding: 10px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 500; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #eee; }
+		#emojiPicker span { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; }
+
+		/* Navigation */
 		.nav-bar { display: none; position: fixed; bottom: 0; width: 100%; max-width: 500px; background: white; height: 70px; border-top: 1px solid #eee; justify-content: space-around; align-items: center; z-index: 100; }
 		.nav-item { cursor: pointer; text-align: center; font-size: 10px; font-weight: bold; color: #999; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 		.active-nav { color: var(--accent); }
-		input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
-		button { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-		.admin-only { display: none; }
-		#chatBox { height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
-		.msg { padding: 10px; border-radius: 15px; max-width: 85%; font-size: 14px; }
-		.sent { background: var(--accent); color: white; align-self: flex-end; }
-		.received { background: #e9ecef; color: #333; align-self: flex-start; }
+		
+		/* Messaging */
+		.msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; position: relative; }
+		.sent { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+		.received { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+		.msg-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 9px; opacity: 0.7; }
+		.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+		
+		/* Global Components */
+		input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+		button { border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 		.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
 		.lucide { width: 20px; height: 20px; }
+		.admin-only { display: none; }
 	</style>
 </head>
 <body>
@@ -39,16 +58,16 @@
 			<img src="mb.png" style="width:80px; border-radius:15px; margin-bottom:10px">
 			<h2>MBO-CON</h2>
 			<input type="text" id="idInput" placeholder="Email or Phone">
-			<input type="password" id="passInput" placeholder="Password">
-			<button onclick="handleLogin()">Sign In <i data-lucide="log-in"></i></button>
+			<input type="password" id="passInput" placeholder="Password" style="margin-top:10px">
+			<button onclick="handleLogin()" style="width:100%; margin-top:15px; padding:12px">Sign In <i data-lucide="log-in"></i></button>
 		</div>
 	</div>
 
 	<div id="dashScreen" class="screen">
-		<div class="glass-card admin-only">
+		<div class="glass-card admin-only" id="adminPanel">
 			<h3 style="margin:0; display:flex; align-items:center; gap:8px"><i data-lucide="shield-check"></i> Manager Insights</h3>
 			<div id="analyticsList" style="max-height:120px; overflow:auto; font-size:12px; margin:10px 0"></div>
-			<button onclick="openModal('memberModal')" style="background:#222"><i data-lucide="user-plus"></i> Register Member</button>
+			<button onclick="openModal('memberModal')" style="background:#222; width:100%; padding:10px"><i data-lucide="user-plus"></i> Register Member</button>
 		</div>
 		<div class="glass-card">
 			<h3 style="display:flex; align-items:center; gap:8px"><i data-lucide="users"></i> Staff Members</h3>
@@ -60,7 +79,7 @@
 		<div class="glass-card">
 			<h3 style="display:flex; align-items:center; gap:8px"><i data-lucide="layout-grid"></i> Group Rooms</h3>
 			<div id="roomList"></div>
-			<button class="admin-only" onclick="openModal('roomModal')" style="margin-top:10px"><i data-lucide="plus-square"></i> Create Room</button>
+			<button class="admin-only" onclick="openModal('roomModal')" style="margin-top:10px; width:100%"><i data-lucide="plus-square"></i> Create Room</button>
 		</div>
 	</div>
 
@@ -73,21 +92,40 @@
 				<p style="display:flex; align-items:center; gap:8px"><i data-lucide="mail"></i> <span id="pEmail"></span></p>
 				<p style="display:flex; align-items:center; gap:8px"><i data-lucide="phone"></i> <span id="pPhone"></span></p>
 			</div>
-			<button onclick="location.reload()" style="background:#c62828; margin-top:20px"><i data-lucide="log-out"></i> Sign Out</button>
+			<button onclick="location.reload()" style="background:#c62828; margin-top:20px; width:100%"><i data-lucide="log-out"></i> Sign Out</button>
 		</div>
 	</div>
 
 	<div id="chatScreen" class="screen">
-		<div class="glass-card">
-			<div style="display:flex; align-items:center; justify-content:space-between">
-				<h3 id="chatHeader" style="margin:0">Chat</h3>
-				<button onclick="switchTab('dashScreen')" style="width:auto; padding:5px; background:#eee; color:#333"><i data-lucide="x"></i></button>
+		<div class="chat-header-fixed">
+			<div style="display:flex; align-items:center;">
+				<button onclick="switchTab('dashScreen')" style="background:none; border:none; padding:5px; margin-right:10px; color:#333">
+					<i data-lucide="chevron-left"></i>
+				</button>
+				<div>
+					<h3 id="chatHeader" style="margin:0; font-size:16px;">Chat</h3>
+					<div id="chatHeaderStatus" style="font-size:11px; color:#777;">Checking...</div>
+				</div>
 			</div>
-			<div id="chatBox"></div>
-			<div style="display:flex; gap:10px; margin-top:10px">
-				<input type="text" id="chatInput" placeholder="Type..." style="margin:0">
-				<button onclick="sendMsg()" style="width:80px"><i data-lucide="send"></i></button>
-			</div>
+			<i data-lucide="more-vertical" style="color:#777"></i>
+		</div>
+		
+		<div id="chatBox"></div>
+
+		<div id="emojiPicker">
+			<span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span>
+			<span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('🙌')">🙌</span>
+			<span onclick="addEmoji('📍')">📍</span><span onclick="addEmoji('✅')">✅</span>
+			<span onclick="addEmoji('⚠️')">⚠️</span><span onclick="addEmoji('😮')">😮</span>
+		</div>
+
+		<div class="chat-input-bar">
+			<button id="emojiBtn" style="background:none; color:#777; width:auto; padding:0"><i data-lucide="smile"></i></button>
+			<input type="text" id="chatInput" placeholder="Type a message..." style="margin:0">
+			<button id="voiceBtn" style="background:none; color:#777; width:auto; padding:0"><i data-lucide="mic"></i></button>
+			<button onclick="sendMsg()" id="sendBtn" style="width:50px; height:42px; flex-shrink:0;">
+				<i data-lucide="send"></i>
+			</button>
 		</div>
 	</div>
 
@@ -101,20 +139,24 @@
 <div id="memberModal" class="modal"><div class="glass-card" style="width:85%">
 	<h3>Add Employee</h3>
 	<input id="nName" placeholder="Name"><input id="nEmail" placeholder="Email"><input id="nPass" placeholder="Pass"><input id="nJob" placeholder="Job"><input id="nPhone" placeholder="Phone">
-	<select id="nType"><option value="Staff">Staff</option><option value="Admin">Admin</option></select>
-	<button onclick="submitNewMember()">Save Member</button><button onclick="closeModal('memberModal')" style="background:#ccc; margin-top:5px">Cancel</button>
+	<select id="nType" style="margin-top:10px"><option value="Staff">Staff</option><option value="Admin">Admin</option></select>
+	<button onclick="submitNewMember()" style="width:100%; margin-top:15px">Save Member</button>
+	<button onclick="closeModal('memberModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
 </div></div>
 
 <div id="roomModal" class="modal"><div class="glass-card" style="width:85%">
 	<h3>New Group Room</h3>
 	<input id="rName" placeholder="Room Name">
-	<div id="mCheck" style="max-height:100px; overflow:auto; margin-bottom:10px"></div>
-	<button onclick="submitNewRoom()">Build Room</button><button onclick="closeModal('roomModal')" style="background:#ccc; margin-top:5px">Cancel</button>
+	<div id="mCheck" style="max-height:100px; overflow:auto; margin:10px 0; border:1px solid #eee; padding:5px; border-radius:10px"></div>
+	<button onclick="submitNewRoom()" style="width:100%">Build Room</button>
+	<button onclick="closeModal('roomModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
 </div></div>
 
 <script>
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrdU2yv6D7s0Nkw4EUBcHU4ryel8MdiIh87n8BBZthwSZyIVX5OhccZ2Qc4qUfvUk/exec';
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi4i4TIdUsZvsVM2MCu-SdeRvbFObjnnCUvMF2CSqaj_Sr04gxfTJsh4WBw-rSB85b/exec';
 	let user = null; let partner = null; let isRoom = false; let chatInterval;
+	let typingTimeout; let isTyping = false;
+	let mediaRecorder; let audioChunks = [];
 
 	function api(p) {
 		return new Promise((res) => {
@@ -130,59 +172,51 @@
 		const res = await api({ action: "login", identifier: idInput.value, password: passInput.value });
 		if(res.status === "success") {
 			user = res.user;
+			setupProfile();
 			loginScreen.classList.remove('active'); navBar.style.display = 'flex';
 			if(user.name.toLowerCase().includes("asim")) {
 				document.querySelectorAll('.admin-only').forEach(e => e.style.display='block');
 				loadAnalytics();
 			}
-			setupProfile(); switchTab('dashScreen');
-			lucide.createIcons(); // Initialize Icons
+			switchTab('dashScreen');
 		} else alert("Invalid Login");
 	}
 
 	function setupProfile() {
-		pName.innerText = user.name; pJob.innerText = user.job; pEmail.innerText = user.email;
-		pPhone.innerText = user.phone; pInit.innerText = user.name[0];
+		pName.innerText = user.name; pJob.innerText = user.job; 
+		pEmail.innerText = user.email; pPhone.innerText = user.phone; 
+		pInit.innerText = user.name[0];
 	}
 
-	async function loadAnalytics() {
-		const res = await api({ action: "getAnalytics" });
-		analyticsList.innerHTML = res.recentLogs.map(l => `
-			<div style="border-bottom:1px solid #eee; padding:6px; position:relative">
-				<b>${l.from}</b> to <b>${l.to}</b><br><small style="color:#666">"${l.text}"</small>
-				<button onclick="openPeek('${l.from}','${l.to}')" style="position:absolute; right:0; top:5px; width:auto; padding:2px 8px; font-size:10px">View</button>
-			</div>
-		`).join('');
-	}
+	function switchTab(id) {
+		clearInterval(chatInterval);
+		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+		document.getElementById(id).classList.add('active');
+		
+		const navIdx = { 'dashScreen': 0, 'roomsScreen': 1, 'profileScreen': 2 }[id];
+		if(navIdx !== undefined) document.querySelectorAll('.nav-item')[navIdx].classList.add('active-nav');
 
-	function openPeek(p1, p2) {
-		partner = (p1 === user.name) ? p2 : p1; isRoom = false;
-		chatHeader.innerText = "Audit: " + p1 + " & " + p2;
-		switchTab('chatScreen');
+		if(id === 'dashScreen') loadProfiles();
+		if(id === 'roomsScreen') loadRooms();
+		if(id === 'chatScreen') {
+			loadMessages();
+			chatInterval = setInterval(() => { loadMessages(); checkPartnerStatus(); }, 2000);
+		}
+		lucide.createIcons();
 	}
 
 	async function loadProfiles() {
 		const res = await api({ action: "getProfiles" });
 		profileList.innerHTML = res.profiles.map(p => `
-			<div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee">
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee">
 				<div><b>${p.name}</b><br><small>${p.job}</small></div>
 				<button onclick="startChat('${p.name}')" style="width:auto; padding:5px 15px">Chat</button>
 			</div>
 		`).join('');
 	}
 
-	async function loadRooms() {
-		const res = await api({ action: "getRooms" });
-		roomList.innerHTML = res.rooms.map(r => `
-			<div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee">
-				<div><b>${r[0]}</b></div>
-				<button onclick="startRoom('${r[0]}')" style="width:auto; padding:5px 15px; background:#222">Open</button>
-			</div>
-		`).join('');
-	}
-
-	function startChat(n) { partner = n; isRoom = false; chatHeader.innerText = n; switchTab('chatScreen'); }
-	function startRoom(n) { partner = n; isRoom = true; chatHeader.innerText = n; switchTab('chatScreen'); }
+	function startChat(n) { partner = n; isRoom = false; document.getElementById('chatHeader').innerText = n; switchTab('chatScreen'); }
 
 	async function sendMsg() {
 		const t = chatInput.value; if(!t) return; chatInput.value = "";
@@ -193,45 +227,107 @@
 	async function loadMessages() {
 		if(!partner) return;
 		const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
-		chatBox.innerHTML = res.messages.map(m => `
-			<div class="msg ${m.sender === user.name ? 'sent' : 'received'}">
-				<small style="display:block; font-size:10px; opacity:0.6">${m.sender}</small>${m.text}
-			</div>
-		`).join('');
+		chatBox.innerHTML = res.messages.map(m => {
+			const timeStr = m.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+			return `
+				<div class="msg ${m.sender === user.name ? 'sent' : 'received'}">
+					<small style="display:block; font-size:9px; opacity:0.6; margin-bottom:2px">${m.sender}</small>
+					<div class="text-content">
+						${m.text}
+						${m.media && m.media.startsWith('data:audio') ? 
+							`<audio controls style="width:100%; height:30px; margin-top:8px;"><source src="${m.media}" type="audio/webm"></audio>` : ''}
+					</div>
+					<div class="msg-info"><span>${timeStr}</span>${m.sender === user.name ? '<span class="status-dot"></span>' : ''}</div>
+				</div>
+			`;
+		}).join('');
 		chatBox.scrollTop = chatBox.scrollHeight;
 	}
 
-	function switchTab(id) {
-		clearInterval(chatInterval);
-		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-		document.getElementById(id).classList.add('active');
-		
-		if(id === 'dashScreen') { loadProfiles(); document.querySelectorAll('.nav-item')[0].classList.add('active-nav'); }
-		if(id === 'roomsScreen') { loadRooms(); document.querySelectorAll('.nav-item')[1].classList.add('active-nav'); }
-		if(id === 'profileScreen') document.querySelectorAll('.nav-item')[2].classList.add('active-nav');
-		if(id === 'chatScreen') { loadMessages(); chatInterval = setInterval(loadMessages, 3000); }
-		
-		lucide.createIcons();
+	// VOICE NOTES
+	voiceBtn.onclick = async () => {
+		if (!mediaRecorder || mediaRecorder.state === "inactive") {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			mediaRecorder = new MediaRecorder(stream);
+			audioChunks = [];
+			mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+			mediaRecorder.onstop = async () => {
+				const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+				const reader = new FileReader();
+				reader.readAsDataURL(audioBlob);
+				reader.onloadend = async () => {
+					await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result, isRoom: isRoom });
+					loadMessages();
+				};
+			};
+			mediaRecorder.start();
+			voiceBtn.style.color = "red";
+			voiceBtn.innerHTML = '<i data-lucide="square"></i>';
+			lucide.createIcons();
+		} else {
+			mediaRecorder.stop();
+			voiceBtn.style.color = "#777";
+			voiceBtn.innerHTML = '<i data-lucide="mic"></i>';
+			lucide.createIcons();
+		}
+	};
+
+	// EMOJIS
+	emojiBtn.onclick = () => {
+		const p = document.getElementById('emojiPicker');
+		p.style.display = p.style.display === 'none' ? 'grid' : 'none';
+	};
+	function addEmoji(emoji) {
+		chatInput.value += emoji;
+		emojiPicker.style.display = 'none';
+		chatInput.focus();
 	}
 
+	// TYPING & STATUS
+	chatInput.addEventListener('input', () => {
+		if (!isTyping) { isTyping = true; api({ action: "updateStatus", name: user.name, isTyping: "true", typingTo: partner }); }
+		clearTimeout(typingTimeout);
+		typingTimeout = setTimeout(() => { isTyping = false; api({ action: "updateStatus", name: user.name, isTyping: "false", typingTo: "" }); }, 3000);
+	});
+
+	async function checkPartnerStatus() {
+		if (!partner || isRoom) return;
+		const res = await api({ action: "getUserStatus", targetName: partner });
+		const statusEl = document.getElementById('chatHeaderStatus');
+		if (res.typingTo === user.name) { statusEl.innerText = "typing..."; statusEl.style.color = "#5d4037"; }
+		else if (res.isOnline) { statusEl.innerText = "Online"; statusEl.style.color = "green"; }
+		else { statusEl.innerText = "Last seen " + res.lastSeen; statusEl.style.color = "#777"; }
+	}
+
+	// ROOMS & ANALYTICS
+	async function loadRooms() {
+		const res = await api({ action: "getRooms" });
+		roomList.innerHTML = res.rooms.map(r => `
+			<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee">
+				<div><b>${r[0]}</b></div>
+				<button onclick="startRoom('${r[0]}')" style="width:auto; padding:5px 15px; background:#222">Open</button>
+			</div>
+		`).join('');
+	}
+	function startRoom(n) { partner = n; isRoom = true; document.getElementById('chatHeader').innerText = n; switchTab('chatScreen'); }
 	function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'roomModal') loadCheck(); }
 	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
 	async function loadCheck() {
 		const res = await api({ action: "getProfiles" });
 		mCheck.innerHTML = res.profiles.map(p => `<label style="display:block; margin:5px 0"><input type="checkbox" class="mc" value="${p.name}"> ${p.name}</label>`).join('');
 	}
-
 	async function submitNewMember() {
 		await api({ action: "addMember", newName: nName.value, newEmail: nEmail.value, newPass: nPass.value, newJob: nJob.value, newPhone: nPhone.value, newType: nType.value });
 		closeModal('memberModal'); loadProfiles();
 	}
-
 	async function submitNewRoom() {
 		const m = Array.from(document.querySelectorAll('.mc:checked')).map(c => c.value).join(',');
 		await api({ action: "createRoom", roomName: rName.value, members: m });
 		closeModal('roomModal'); loadRooms();
+	}
+	async function loadAnalytics() {
+		const res = await api({ action: "getAnalytics" });
+		analyticsList.innerHTML = res.recentLogs.map(l => `<div style="border-bottom:1px solid #eee; padding:6px;"><b>${l.from}</b> to <b>${l.to}</b><br><small style="color:#666">"${l.text}"</small></div>`).join('');
 	}
 </script>
 </body>
