@@ -12,7 +12,11 @@
 	<title>MBO-CON Enterprise</title>
 	<script src="https://unpkg.com/lucide@latest"></script>
 	<style>
-		:root { --glass: rgba(255, 255, 255, 0.9); --accent: #5d4037; --bg: #f4f7f6; }
+		:root { 
+			--glass: rgba(255, 255, 255, 0.95); 
+			--accent: #000000; /* Pure Black */
+			--bg: #121212;    /* Dark background for the whole screen */
+		}
 		body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; overflow: hidden; }
 		.app-container { width: 100%; max-width: 500px; height: 100vh; position: relative; }
 		.glass-card { background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin: 15px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -37,7 +41,12 @@
 		
 		/* Messaging */
 		.msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; position: relative; }
-		.sent { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+		.sent { 
+			background: #222222; /* Dark Grey/Black bubble */
+			color: #ffffff; 
+			align-self: flex-end; 
+			border: 1px solid #444; /* Subtle border to see the bubble edges */
+		}
 		.received { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 		.msg-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 9px; opacity: 0.7; }
 		.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
