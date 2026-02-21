@@ -35,7 +35,7 @@
 		/* Voice/Visualizer */
 		.recording-overlay { display: none; align-items: center; gap: 15px; flex: 1; background: #fff; }
 		.visualizer-container { flex: 1; height: 30px; display: flex; align-items: center; gap: 2px; }
-		.bar { width: 3px; background: #000; border-radius: 2px; transition: height 0.1s ease; }
+		.bar { width: 4px; background: #000; border-radius: 4px; transition: height 0.05s ease; min-height: 4px; }
 		.voice-hold-btn { transition: transform 0.2s; user-select: none; -webkit-tap-highlight-color: transparent; }
 		.voice-hold-btn.active { transform: scale(1.3); color: #ff4444 !important; }
 
@@ -50,6 +50,7 @@
 		.msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; position: relative; }
 		.sent { background: #222; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
 		.received { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+		audio { width: 100%; max-width: 220px; margin-top: 5px; }
 	</style>
 </head>
 <body>
@@ -111,7 +112,7 @@
 		<div class="chat-input-bar">
 			<input type="text" id="chatInput" placeholder="Message...">
 			<div id="recordingOverlay" class="recording-overlay">
-				<span style="color:red; font-size:12px; font-weight:bold;">REC</span>
+				<span style="color:red; font-size:10px; font-weight:bold; animation: pulse 1s infinite;">REC</span>
 				<div id="visualizer" class="visualizer-container"></div>
 			</div>
 			<button id="voiceBtn" class="voice-hold-btn" style="background:none; color:#777"><i data-lucide="mic"></i></button>
@@ -133,17 +134,10 @@
 	<button onclick="closeModal('passModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
 </div></div>
 
-<div id="memberModal" class="modal"><div class="glass-card" style="width:85%">
-	<h3>Add Employee</h3>
-	<input id="nName" placeholder="Name"><input id="nEmail" placeholder="Email"><input id="nPass" placeholder="Pass"><input id="nJob" placeholder="Job"><input id="nPhone" placeholder="Phone">
-	<button onclick="submitNewMember()" style="width:100%; margin-top:15px">Save</button>
-	<button onclick="closeModal('memberModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
-</div></div>
-
 <script>
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1vUlNmh1oaKpV_IJgWNaY47vOBvfPNBKpn1sny9nO272rU0m8Vlu-APWA-shfJM_-/exec'; 
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1vUlNmh1oaKpV_IJgWNaY47vOBvfPNBKpn1sny9nO272rU0m8Vlu-APWA-shfJM_-/exec'; 
 	let user = null, partner = null, isRoom = false, allContacts = [], chatInterval, notifInterval;
-	let mediaRecorder, audioChunks = [], audioContext, analyser, animationId;
+	let mediaRecorder, audioChunks = [], audioContext, analyser, dataArray, animationId, stream;
 
 	async function api(p) {
 		if (p.action === "sendMessage" && p.media) {
@@ -179,21 +173,12 @@
 		pInit.innerText = user.name[0];
 	}
 
-	async function updatePassword() {
-		const np = document.getElementById('newPass').value;
-		if(!np) return;
-		await api({ action: "updateStatus", name: user.name, newPassword: np }); // Reusing status to update pass
-		alert("Password updated locally (Backend requires specific pass action)");
-		closeModal('passModal');
-	}
-
 	function switchTab(id) {
 		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
 		document.getElementById(id).classList.add('active');
 		const idx = {'dashScreen':0, 'roomsScreen':1, 'profileScreen':2}[id];
 		document.querySelectorAll('.nav-item')[idx].classList.add('active-nav');
-		if(id === 'roomsScreen') loadRooms();
 		lucide.createIcons();
 	}
 
@@ -205,7 +190,10 @@
 		if(q.length < 1) { resDiv.style.display = 'none'; return; }
 		const filtered = allContacts.filter(p => p.name.toLowerCase().includes(q) && p.name !== user.name);
 		resDiv.style.display = 'flex';
-		resDiv.innerHTML = filtered.map(p => `<div class="contact-card" onclick="startChat('${p.name}')"><div><b>${p.name}</b><br><small>${p.job}</small></div><i data-lucide="message-square"></i></div>`).join('');
+		resDiv.innerHTML = filtered.map(p => {
+			const safeName = p.name.replace(/'/g, "\\'");
+			return `<div class="contact-card" onclick="startChat('${safeName}')"><div><b>${p.name}</b><br><small>${p.job}</small></div><i data-lucide="message-square"></i></div>`;
+		}).join('');
 		lucide.createIcons();
 	}
 
@@ -239,46 +227,87 @@
 		loadMessages();
 	}
 
-	// VOICE LOGIC
-	async function startRecording() {
-		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-		mediaRecorder = new MediaRecorder(stream);
-		audioChunks = [];
-		mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-		mediaRecorder.onstop = async () => {
-			const blob = new Blob(audioChunks, { type: 'audio/webm' });
-			const reader = new FileReader();
-			reader.readAsDataURL(blob);
-			reader.onloadend = async () => {
-				await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result, isRoom: isRoom });
-				loadMessages();
+	// STABLE VOICE LOGIC WITH VISUALIZER
+	async function initVisualizer(mediaStream) {
+		if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+		if (audioContext.state === 'suspended') await audioContext.resume();
+		const source = audioContext.createMediaStreamSource(mediaStream);
+		analyser = audioContext.createAnalyser();
+		analyser.fftSize = 64; 
+		source.connect(analyser);
+		dataArray = new Uint8Array(analyser.frequencyBinCount);
+		const viz = document.getElementById('visualizer');
+		viz.innerHTML = '';
+		for(let i=0; i<12; i++) {
+			const bar = document.createElement('div');
+			bar.className = 'bar';
+			viz.appendChild(bar);
+		}
+		function draw() {
+			animationId = requestAnimationFrame(draw);
+			analyser.getByteFrequencyData(dataArray);
+			const bars = document.querySelectorAll('.bar');
+			bars.forEach((bar, i) => {
+				const val = (dataArray[i] / 255) * 35;
+				bar.style.height = Math.max(4, val) + 'px';
+			});
+		}
+		draw();
+	}
+
+	async function startRecording(e) {
+		if(e) e.preventDefault();
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			mediaRecorder = new MediaRecorder(stream);
+			audioChunks = [];
+			mediaRecorder.ondataavailable = ev => { if(ev.data.size > 0) audioChunks.push(ev.data); };
+			mediaRecorder.onstop = async () => {
+				const blob = new Blob(audioChunks, { type: 'audio/webm' });
+				if (blob.size > 2000) { // Stability check
+					const reader = new FileReader();
+					reader.readAsDataURL(blob);
+					reader.onloadend = async () => {
+						await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result, isRoom: isRoom });
+						loadMessages();
+					};
+				}
+				stream.getTracks().forEach(t => t.stop());
 			};
-		};
-		mediaRecorder.start();
-		document.getElementById('recordingOverlay').style.display = 'flex';
-		document.getElementById('chatInput').style.display = 'none';
-		voiceBtn.classList.add('active');
+			mediaRecorder.start();
+			await initVisualizer(stream);
+			document.getElementById('recordingOverlay').style.display = 'flex';
+			document.getElementById('chatInput').style.display = 'none';
+			voiceBtn.classList.add('active');
+		} catch (err) { console.error(err); }
 	}
 
-	function stopRecording() {
-		if(mediaRecorder) mediaRecorder.stop();
-		document.getElementById('recordingOverlay').style.display = 'none';
-		document.getElementById('chatInput').style.display = 'block';
-		voiceBtn.classList.remove('active');
+	function stopRecording(e) {
+		if(e) e.preventDefault();
+		if(mediaRecorder && mediaRecorder.state !== "inactive") {
+			mediaRecorder.stop();
+			cancelAnimationFrame(animationId);
+			document.getElementById('recordingOverlay').style.display = 'none';
+			document.getElementById('chatInput').style.display = 'block';
+			voiceBtn.classList.remove('active');
+		}
 	}
 
-	voiceBtn.addEventListener('mousedown', startRecording);
-	voiceBtn.addEventListener('mouseup', stopRecording);
-	voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-	voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+	voiceBtn.onmousedown = startRecording;
+	voiceBtn.onmouseup = stopRecording;
+	voiceBtn.ontouchstart = startRecording;
+	voiceBtn.ontouchend = stopRecording;
 
 	async function checkNotifications() {
 		const res = await api({ action: "getAnalytics" });
+		if(!res.recentLogs) return;
 		const unread = res.recentLogs.filter(l => l.to === user.name && l.from !== partner);
 		if(unread.length > 0) {
 			const s = unread[unread.length-1].from;
-			notificationArea.innerHTML = `<div class="notif-card" onclick="startChat('${s}')"><div><b>${s}</b> sent a message</div><button>View</button></div>`;
+			const safeSender = s.replace(/'/g, "\\'");
+			notificationArea.innerHTML = `<div class="notif-card" onclick="startChat('${safeSender}')"><div><b>${s}</b> sent a message</div><button>View</button></div>`;
 		} else notificationArea.innerHTML = "";
+		lucide.createIcons();
 	}
 
 	function openModal(id) { document.getElementById(id).style.display = 'flex'; }
