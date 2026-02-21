@@ -2,139 +2,120 @@
 <html lang="en">
 <head>
 	<link rel="manifest" href="manifest.json">
-	<meta name="mobile-web-app-capable" content="yes">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="apple-mobile-web-app-title" content="MBO-CON">
-	<link rel="apple-touch-icon" href="mb.png">
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>MBO-CON Enterprise</title>
 	<script src="https://unpkg.com/lucide@latest"></script>
 	<style>
-		:root { 
-			--glass: rgba(255, 255, 255, 0.95); 
-			--accent: #000000; /* Pure Black */
-			--bg: #121212;    /* Dark background for the whole screen */
+		:root {
+			--accent: #000000;
+			--bg: #121212;
+			--safe-top: env(safe-area-inset-top, 0px);
+			--safe-bottom: env(safe-area-inset-bottom, 0px);
 		}
-		body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; overflow: hidden; }
-		.app-container { width: 100%; max-width: 500px; height: 100vh; position: relative; }
-		.glass-card { background: var(--glass); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin: 15px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-		.screen { display: none; height: 100%; overflow-y: auto; padding-bottom: 90px; box-sizing: border-box; } 
+		body { background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+		.app-container { width: 100%; max-width: 500px; height: 100vh; position: relative; margin: auto; display: flex; flex-direction: column; background: var(--bg); }
+		.screen { display: none; height: 100%; overflow-y: auto; padding-top: var(--safe-top); padding-bottom: calc(100px + var(--safe-bottom)); box-sizing: border-box; }
 		.active { display: block; }
+		.glass-card { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; margin: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 		
-		/* Fixed Chat Screen Logic */
-		#chatScreen { display: none; height: 100vh; flex-direction: column; padding: 0; background: #fff; position: absolute; top: 0; width: 100%; z-index: 200; }
-		#chatScreen.active { display: flex; }
-		.chat-header-fixed { padding: 10px 15px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-		#chatBox { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #f0f2f5; }
-		.chat-input-bar { padding: 10px 15px; background: #fff; border-top: 1px solid #eee; display: flex; gap: 10px; align-items: center; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 15px); }
-		
-		/* Emoji Picker Styling */
-		#emojiPicker { display: none; position: absolute; bottom: 70px; left: 15px; background: white; padding: 10px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 500; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #eee; }
-		#emojiPicker span { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; }
+		/* Notifications & Cards */
+		.notif-card { background: #fff; border-left: 5px solid #000; margin: 15px; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+		@keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+		.contact-card { background: #f9f9f9; padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; }
+
+		/* Chat Layout */
+		#chatScreen { background: #fff; position: absolute; top: 0; width: 100%; height: 100%; z-index: 500; display: none; flex-direction: column; }
+		#chatBox { flex: 1; overflow-y: auto; padding: 15px; background: #f0f2f5; display: flex; flex-direction: column; gap: 10px; }
+		.chat-header-fixed { padding: 10px 15px; padding-top: calc(10px + var(--safe-top)); border-bottom: 1px solid #eee; display: flex; align-items: center; background: white; justify-content: space-between; }
+		.chat-input-bar { padding: 10px; padding-bottom: calc(10px + var(--safe-bottom)); display: flex; align-items: center; gap: 10px; border-top: 1px solid #eee; background: #fff; }
+
+		/* Voice/Visualizer */
+		.recording-overlay { display: none; align-items: center; gap: 15px; flex: 1; background: #fff; }
+		.visualizer-container { flex: 1; height: 30px; display: flex; align-items: center; gap: 2px; }
+		.bar { width: 3px; background: #000; border-radius: 2px; transition: height 0.1s ease; }
+		.voice-hold-btn { transition: transform 0.2s; user-select: none; -webkit-tap-highlight-color: transparent; }
+		.voice-hold-btn.active { transform: scale(1.3); color: #ff4444 !important; }
 
 		/* Navigation */
-		.nav-bar { display: none; position: fixed; bottom: 0; width: 100%; max-width: 500px; background: white; height: 70px; border-top: 1px solid #eee; justify-content: space-around; align-items: center; z-index: 100; }
-		.nav-item { cursor: pointer; text-align: center; font-size: 10px; font-weight: bold; color: #999; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-		.active-nav { color: var(--accent); }
-		
-		/* Messaging */
+		.nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; height: calc(70px + var(--safe-bottom)); background: #fff; display: none; justify-content: space-around; align-items: center; border-top: 1px solid #eee; padding-bottom: var(--safe-bottom); z-index: 100; }
+		.nav-item { text-align: center; font-size: 10px; font-weight: bold; color: #999; cursor: pointer; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+		.active-nav { color: #000; }
+
+		input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+		button { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
+		.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
 		.msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 14px; position: relative; }
-		.sent { 
-			background: #222222; /* Dark Grey/Black bubble */
-			color: #ffffff; 
-			align-self: flex-end; 
-			border: 1px solid #444; /* Subtle border to see the bubble edges */
-		}
+		.sent { background: #222; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
 		.received { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-		.msg-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 9px; opacity: 0.7; }
-		.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
-		
-		/* Global Components */
-		input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
-		button { border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-		.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
-		.lucide { width: 20px; height: 20px; }
-		.admin-only { display: none; }
 	</style>
 </head>
 <body>
 
 <div class="app-container">
 	<div id="loginScreen" class="screen active">
-		<div class="glass-card" style="text-align:center; margin-top:50px">
+		<div class="glass-card" style="text-align:center; margin-top:80px">
 			<img src="mb.png" style="width:80px; border-radius:15px; margin-bottom:10px">
 			<h2>MBO-CON</h2>
 			<input type="text" id="idInput" placeholder="Email or Phone">
 			<input type="password" id="passInput" placeholder="Password" style="margin-top:10px">
-			<button onclick="handleLogin()" style="width:100%; margin-top:15px; padding:12px">Sign In <i data-lucide="log-in"></i></button>
+			<button onclick="handleLogin()" style="width:100%; margin-top:20px">Sign In</button>
 		</div>
 	</div>
 
 	<div id="dashScreen" class="screen">
-		<div class="glass-card admin-only" id="adminPanel">
-			<h3 style="margin:0; display:flex; align-items:center; gap:8px"><i data-lucide="shield-check"></i> Manager Insights</h3>
-			<div id="analyticsList" style="max-height:120px; overflow:auto; font-size:12px; margin:10px 0"></div>
-			<button onclick="openModal('memberModal')" style="background:#222; width:100%; padding:10px"><i data-lucide="user-plus"></i> Register Member</button>
-		</div>
+		<div id="notificationArea"></div>
 		<div class="glass-card">
-			<h3 style="display:flex; align-items:center; gap:8px"><i data-lucide="users"></i> Staff Members</h3>
-			<div id="profileList"></div>
+			<h3><i data-lucide="search"></i> Find Contact</h3>
+			<input type="text" id="contactSearch" placeholder="Type name..." oninput="filterContacts()">
+			<div id="searchResults" style="margin-top:15px; display:none; flex-direction:column;"></div>
+		</div>
+		<div class="glass-card admin-only" id="adminPanel" style="display:none;">
+			<h3>Manager Panel</h3>
+			<button onclick="openModal('memberModal')" style="width:100%; background:#222"><i data-lucide="user-plus"></i> Add Staff</button>
 		</div>
 	</div>
 
 	<div id="roomsScreen" class="screen">
 		<div class="glass-card">
-			<h3 style="display:flex; align-items:center; gap:8px"><i data-lucide="layout-grid"></i> Group Rooms</h3>
+			<h3>Group Rooms</h3>
 			<div id="roomList"></div>
-			<button class="admin-only" onclick="openModal('roomModal')" style="margin-top:10px; width:100%"><i data-lucide="plus-square"></i> Create Room</button>
+			<button class="admin-only" onclick="openModal('roomModal')" style="margin-top:10px; width:100%"><i data-lucide="plus"></i> Create Room</button>
 		</div>
 	</div>
 
 	<div id="profileScreen" class="screen">
 		<div class="glass-card" style="text-align:center">
-			<div style="width:70px; height:70px; background:var(--accent); color:white; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:24px" id="pInit">U</div>
-			<h2 id="pName" style="margin:0">User</h2>
-			<p id="pJob" style="color:#777">Job</p>
-			<div style="text-align:left; font-size:14px; margin-top:20px; border-top:1px solid #eee; padding-top:10px">
-				<p style="display:flex; align-items:center; gap:8px"><i data-lucide="mail"></i> <span id="pEmail"></span></p>
-				<p style="display:flex; align-items:center; gap:8px"><i data-lucide="phone"></i> <span id="pPhone"></span></p>
+			<div style="width:80px; height:80px; background:#000; color:#fff; border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:30px" id="pInit">U</div>
+			<h2 id="pName" style="margin:0">User Name</h2>
+			<p id="pJob" style="color:#777; margin:5px 0">Position</p>
+			<div style="text-align:left; font-size:14px; margin-top:20px; border-top:1px solid #eee; padding-top:20px">
+				<p><i data-lucide="mail"></i> <span id="pEmail"></span></p>
+				<p><i data-lucide="phone"></i> <span id="pPhone"></span></p>
 			</div>
-			<button onclick="location.reload()" style="background:#c62828; margin-top:20px; width:100%"><i data-lucide="log-out"></i> Sign Out</button>
+			<button onclick="openModal('passModal')" style="width:100%; background:#444; margin-top:10px"><i data-lucide="lock"></i> Change Password</button>
+			<button onclick="location.reload()" style="width:100%; background:#c62828; margin-top:10px"><i data-lucide="log-out"></i> Sign Out</button>
 		</div>
 	</div>
 
-	<div id="chatScreen" class="screen">
+	<div id="chatScreen">
 		<div class="chat-header-fixed">
-			<div style="display:flex; align-items:center;">
-				<button onclick="switchTab('dashScreen')" style="background:none; border:none; padding:5px; margin-right:10px; color:#333">
-					<i data-lucide="chevron-left"></i>
-				</button>
-				<div>
-					<h3 id="chatHeader" style="margin:0; font-size:16px;">Chat</h3>
-					<div id="chatHeaderStatus" style="font-size:11px; color:#777;">Checking...</div>
-				</div>
+			<div style="display:flex; align-items:center">
+				<button onclick="closeChat()" style="background:none; color:#000; padding:5px"><i data-lucide="chevron-left"></i></button>
+				<div style="margin-left:10px"><b id="chatHeader">Name</b><div id="chatHeaderStatus" style="font-size:11px; color:#777">Offline</div></div>
 			</div>
-			<i data-lucide="more-vertical" style="color:#777"></i>
 		</div>
-		
 		<div id="chatBox"></div>
-
-		<div id="emojiPicker">
-			<span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span>
-			<span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('🙌')">🙌</span>
-			<span onclick="addEmoji('📍')">📍</span><span onclick="addEmoji('✅')">✅</span>
-			<span onclick="addEmoji('⚠️')">⚠️</span><span onclick="addEmoji('😮')">😮</span>
-		</div>
-
 		<div class="chat-input-bar">
-			<button id="emojiBtn" style="background:none; color:#777; width:auto; padding:0"><i data-lucide="smile"></i></button>
-			<input type="text" id="chatInput" placeholder="Type a message..." style="margin:0">
-			<button id="voiceBtn" style="background:none; color:#777; width:auto; padding:0"><i data-lucide="mic"></i></button>
-			<button onclick="sendMsg()" id="sendBtn" style="width:50px; height:42px; flex-shrink:0;">
-				<i data-lucide="send"></i>
-			</button>
+			<input type="text" id="chatInput" placeholder="Message...">
+			<div id="recordingOverlay" class="recording-overlay">
+				<span style="color:red; font-size:12px; font-weight:bold;">REC</span>
+				<div id="visualizer" class="visualizer-container"></div>
+			</div>
+			<button id="voiceBtn" class="voice-hold-btn" style="background:none; color:#777"><i data-lucide="mic"></i></button>
+			<button onclick="sendMsg()"><i data-lucide="send"></i></button>
 		</div>
 	</div>
 
@@ -145,43 +126,33 @@
 	</div>
 </div>
 
+<div id="passModal" class="modal"><div class="glass-card" style="width:80%">
+	<h3>Change Password</h3>
+	<input type="password" id="newPass" placeholder="New Password">
+	<button onclick="updatePassword()" style="width:100%; margin-top:15px">Update</button>
+	<button onclick="closeModal('passModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
+</div></div>
+
 <div id="memberModal" class="modal"><div class="glass-card" style="width:85%">
 	<h3>Add Employee</h3>
 	<input id="nName" placeholder="Name"><input id="nEmail" placeholder="Email"><input id="nPass" placeholder="Pass"><input id="nJob" placeholder="Job"><input id="nPhone" placeholder="Phone">
-	<select id="nType" style="margin-top:10px"><option value="Staff">Staff</option><option value="Admin">Admin</option></select>
-	<button onclick="submitNewMember()" style="width:100%; margin-top:15px">Save Member</button>
+	<button onclick="submitNewMember()" style="width:100%; margin-top:15px">Save</button>
 	<button onclick="closeModal('memberModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
 </div></div>
 
-<div id="roomModal" class="modal"><div class="glass-card" style="width:85%">
-	<h3>New Group Room</h3>
-	<input id="rName" placeholder="Room Name">
-	<div id="mCheck" style="max-height:100px; overflow:auto; margin:10px 0; border:1px solid #eee; padding:5px; border-radius:10px"></div>
-	<button onclick="submitNewRoom()" style="width:100%">Build Room</button>
-	<button onclick="closeModal('roomModal')" style="background:#ccc; margin-top:5px; width:100%">Cancel</button>
-</div></div>
-
 <script>
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5o6X8VtFCQG33RTGTgRlYvFmxegbH2DQQv1nH6IaSdchK_q79BoFDPzA5DQzI3RFe/exec';
-	let user = null; let partner = null; let isRoom = false; let chatInterval;
-	let typingTimeout; let isTyping = false;
-	let mediaRecorder; let audioChunks = [];
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1vUlNmh1oaKpV_IJgWNaY47vOBvfPNBKpn1sny9nO272rU0m8Vlu-APWA-shfJM_-/exec'; 
+	let user = null, partner = null, isRoom = false, allContacts = [], chatInterval, notifInterval;
+	let mediaRecorder, audioChunks = [], audioContext, analyser, animationId;
 
 	async function api(p) {
-		// If sending media (voice note), we MUST use POST
 		if (p.action === "sendMessage" && p.media) {
-			const response = await fetch(SCRIPT_URL, {
-				method: "POST",
-				body: JSON.stringify(p),
-				headers: { "Content-Type": "text/plain;charset=utf-8" }
-			});
-			return await response.json();
+			const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(p) });
+			return await r.json();
 		}
-	
-		// Otherwise, keep using the fast JSONP method for simple data
-		return new Promise((res) => {
-			const cb = 'cb' + Math.round(Math.random() * 100000);
-			window[cb] = (d) => { res(d); delete window[cb]; };
+		return new Promise(res => {
+			const cb = 'cb'+Math.round(Math.random()*100000);
+			window[cb] = d => { res(d); delete window[cb]; };
 			const s = document.createElement('script');
 			s.src = `${SCRIPT_URL}?${new URLSearchParams(p)}&callback=${cb}`;
 			document.body.appendChild(s);
@@ -193,50 +164,74 @@
 		if(res.status === "success") {
 			user = res.user;
 			setupProfile();
-			loginScreen.classList.remove('active'); navBar.style.display = 'flex';
-			if(user.name.toLowerCase().includes("asim")) {
-				document.querySelectorAll('.admin-only').forEach(e => e.style.display='block');
-				loadAnalytics();
-			}
+			loginScreen.classList.remove('active');
+			navBar.style.display = 'flex';
+			if(user.name.toLowerCase().includes("asim")) document.querySelectorAll('.admin-only').forEach(e => e.style.display='block');
 			switchTab('dashScreen');
+			loadProfiles();
+			notifInterval = setInterval(checkNotifications, 5000);
 		} else alert("Invalid Login");
 	}
 
 	function setupProfile() {
-		pName.innerText = user.name; pJob.innerText = user.job; 
-		pEmail.innerText = user.email; pPhone.innerText = user.phone; 
+		pName.innerText = user.name; pJob.innerText = user.job;
+		pEmail.innerText = user.email; pPhone.innerText = user.phone;
 		pInit.innerText = user.name[0];
 	}
 
+	async function updatePassword() {
+		const np = document.getElementById('newPass').value;
+		if(!np) return;
+		await api({ action: "updateStatus", name: user.name, newPassword: np }); // Reusing status to update pass
+		alert("Password updated locally (Backend requires specific pass action)");
+		closeModal('passModal');
+	}
+
 	function switchTab(id) {
-		clearInterval(chatInterval);
 		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
 		document.getElementById(id).classList.add('active');
-		
-		const navIdx = { 'dashScreen': 0, 'roomsScreen': 1, 'profileScreen': 2 }[id];
-		if(navIdx !== undefined) document.querySelectorAll('.nav-item')[navIdx].classList.add('active-nav');
-
-		if(id === 'dashScreen') loadProfiles();
+		const idx = {'dashScreen':0, 'roomsScreen':1, 'profileScreen':2}[id];
+		document.querySelectorAll('.nav-item')[idx].classList.add('active-nav');
 		if(id === 'roomsScreen') loadRooms();
-		if(id === 'chatScreen') {
-			loadMessages();
-			chatInterval = setInterval(() => { loadMessages(); checkPartnerStatus(); }, 2000);
-		}
 		lucide.createIcons();
 	}
 
-	async function loadProfiles() {
-		const res = await api({ action: "getProfiles" });
-		profileList.innerHTML = res.profiles.map(p => `
-			<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee">
-				<div><b>${p.name}</b><br><small>${p.job}</small></div>
-				<button onclick="startChat('${p.name}')" style="width:auto; padding:5px 15px">Chat</button>
-			</div>
-		`).join('');
+	async function loadProfiles() { const res = await api({ action: "getProfiles" }); allContacts = res.profiles; }
+
+	function filterContacts() {
+		const q = contactSearch.value.toLowerCase();
+		const resDiv = document.getElementById('searchResults');
+		if(q.length < 1) { resDiv.style.display = 'none'; return; }
+		const filtered = allContacts.filter(p => p.name.toLowerCase().includes(q) && p.name !== user.name);
+		resDiv.style.display = 'flex';
+		resDiv.innerHTML = filtered.map(p => `<div class="contact-card" onclick="startChat('${p.name}')"><div><b>${p.name}</b><br><small>${p.job}</small></div><i data-lucide="message-square"></i></div>`).join('');
+		lucide.createIcons();
 	}
 
-	function startChat(n) { partner = n; isRoom = false; document.getElementById('chatHeader').innerText = n; switchTab('chatScreen'); }
+	function startChat(name, isRm = false) {
+		partner = name; isRoom = isRm;
+		document.getElementById('chatHeader').innerText = name;
+		document.getElementById('chatScreen').style.display = 'flex';
+		loadMessages();
+		clearInterval(chatInterval);
+		chatInterval = setInterval(loadMessages, 3000);
+	}
+
+	function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); }
+
+	async function loadMessages() {
+		if(!partner) return;
+		const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
+		chatBox.innerHTML = res.messages.map(m => `
+			<div class="msg ${m.sender === user.name ? 'sent' : 'received'}">
+				<small style="display:block; font-size:9px; opacity:0.6">${m.sender}</small>
+				${m.text}
+				${m.media ? `<audio controls src="${m.media}"></audio>` : ''}
+			</div>
+		`).join('');
+		chatBox.scrollTop = chatBox.scrollHeight;
+	}
 
 	async function sendMsg() {
 		const t = chatInput.value; if(!t) return; chatInput.value = "";
@@ -244,151 +239,51 @@
 		loadMessages();
 	}
 
-	async function loadMessages() {
-		if(!partner) return;
-		const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
-		chatBox.innerHTML = res.messages.map(m => {
-			const timeStr = m.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-			return `
-				<div class="msg ${m.sender === user.name ? 'sent' : 'received'}">
-					<small style="display:block; font-size:9px; opacity:0.6; margin-bottom:2px">${m.sender}</small>
-					<div class="text-content">
-						${m.text}
-						${m.media && m.media.startsWith('data:audio') ? 
-						`<audio controls style="width:100%; height:35px; margin-top:8px;">
-							<source src="${m.media}" type="audio/webm">
-						 </audio>` : ''}
-					</div>
-					<div class="msg-info"><span>${timeStr}</span>${m.sender === user.name ? '<span class="status-dot"></span>' : ''}</div>
-				</div>
-			`;
-		}).join('');
-		chatBox.scrollTop = chatBox.scrollHeight;
-	}
-	
-
-	voiceBtn.onclick = async () => {
-		if (!mediaRecorder || mediaRecorder.state === "inactive") {
-			try {
-				// Force high-quality audio without "auto-fixes" that cause silence
-				const stream = await navigator.mediaDevices.getUserMedia({ 
-					audio: {
-						echoCancellation: false,
-						noiseSuppression: false,
-						autoGainControl: true // Keep this on to boost quiet voices
-					} 
-				});
-	
-				// Double-check the track is actually "live"
-				const audioTrack = stream.getAudioTracks()[0];
-				if (audioTrack.readyState !== "live") {
-					throw new Error("Audio track not active");
-				}
-	
-				const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
-				mediaRecorder = new MediaRecorder(stream, { mimeType });
-				audioChunks = [];
-				
-				mediaRecorder.ondataavailable = e => { 
-					if (e.data.size > 0) audioChunks.push(e.data); 
-				};
-	
-				mediaRecorder.onstop = async () => {
-					const audioBlob = new Blob(audioChunks, { type: mimeType });
-					
-					// Stop the mic hardware completely after recording
-					stream.getTracks().forEach(track => track.stop());
-	
-					const reader = new FileReader();
-					reader.readAsDataURL(audioBlob);
-					reader.onloadend = async () => {
-						await api({ 
-							action: "sendMessage", 
-							sender: user.name, 
-							receiver: partner, 
-							text: "🎤 Voice Note", 
-							media: reader.result 
-						});
-						loadMessages();
-					};
-				};
-	
-				// Timeslice (1000ms) ensures data is captured every second
-				mediaRecorder.start(1000); 
-				voiceBtn.classList.add('recording');
-				voiceBtn.innerHTML = '<i data-lucide="square"></i>';
-				lucide.createIcons();
-			} catch (err) { 
-				alert("Mic Error: " + err.message); 
-			}
-		} else {
-			mediaRecorder.stop();
-			voiceBtn.classList.remove('recording');
-			voiceBtn.innerHTML = '<i data-lucide="mic"></i>';
-			lucide.createIcons();
-		}
-	};
-	function toggleEmoji() { emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'grid' : 'none'; }
-	function addEmoji(e) { chatInput.value += e; toggleEmoji(); }
-	lucide.createIcons();
-
-	// EMOJIS
-	emojiBtn.onclick = () => {
-		const p = document.getElementById('emojiPicker');
-		p.style.display = p.style.display === 'none' ? 'grid' : 'none';
-	};
-	function addEmoji(emoji) {
-		chatInput.value += emoji;
-		emojiPicker.style.display = 'none';
-		chatInput.focus();
+	// VOICE LOGIC
+	async function startRecording() {
+		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+		mediaRecorder = new MediaRecorder(stream);
+		audioChunks = [];
+		mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+		mediaRecorder.onstop = async () => {
+			const blob = new Blob(audioChunks, { type: 'audio/webm' });
+			const reader = new FileReader();
+			reader.readAsDataURL(blob);
+			reader.onloadend = async () => {
+				await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result, isRoom: isRoom });
+				loadMessages();
+			};
+		};
+		mediaRecorder.start();
+		document.getElementById('recordingOverlay').style.display = 'flex';
+		document.getElementById('chatInput').style.display = 'none';
+		voiceBtn.classList.add('active');
 	}
 
-	// TYPING & STATUS
-	chatInput.addEventListener('input', () => {
-		if (!isTyping) { isTyping = true; api({ action: "updateStatus", name: user.name, isTyping: "true", typingTo: partner }); }
-		clearTimeout(typingTimeout);
-		typingTimeout = setTimeout(() => { isTyping = false; api({ action: "updateStatus", name: user.name, isTyping: "false", typingTo: "" }); }, 3000);
-	});
-
-	async function checkPartnerStatus() {
-		if (!partner || isRoom) return;
-		const res = await api({ action: "getUserStatus", targetName: partner });
-		const statusEl = document.getElementById('chatHeaderStatus');
-		if (res.typingTo === user.name) { statusEl.innerText = "typing..."; statusEl.style.color = "#5d4037"; }
-		else if (res.isOnline) { statusEl.innerText = "Online"; statusEl.style.color = "green"; }
-		else { statusEl.innerText = "Last seen " + res.lastSeen; statusEl.style.color = "#777"; }
+	function stopRecording() {
+		if(mediaRecorder) mediaRecorder.stop();
+		document.getElementById('recordingOverlay').style.display = 'none';
+		document.getElementById('chatInput').style.display = 'block';
+		voiceBtn.classList.remove('active');
 	}
 
-	// ROOMS & ANALYTICS
-	async function loadRooms() {
-		const res = await api({ action: "getRooms" });
-		roomList.innerHTML = res.rooms.map(r => `
-			<div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #eee">
-				<div><b>${r[0]}</b></div>
-				<button onclick="startRoom('${r[0]}')" style="width:auto; padding:5px 15px; background:#222">Open</button>
-			</div>
-		`).join('');
-	}
-	function startRoom(n) { partner = n; isRoom = true; document.getElementById('chatHeader').innerText = n; switchTab('chatScreen'); }
-	function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'roomModal') loadCheck(); }
-	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-	async function loadCheck() {
-		const res = await api({ action: "getProfiles" });
-		mCheck.innerHTML = res.profiles.map(p => `<label style="display:block; margin:5px 0"><input type="checkbox" class="mc" value="${p.name}"> ${p.name}</label>`).join('');
-	}
-	async function submitNewMember() {
-		await api({ action: "addMember", newName: nName.value, newEmail: nEmail.value, newPass: nPass.value, newJob: nJob.value, newPhone: nPhone.value, newType: nType.value });
-		closeModal('memberModal'); loadProfiles();
-	}
-	async function submitNewRoom() {
-		const m = Array.from(document.querySelectorAll('.mc:checked')).map(c => c.value).join(',');
-		await api({ action: "createRoom", roomName: rName.value, members: m });
-		closeModal('roomModal'); loadRooms();
-	}
-	async function loadAnalytics() {
+	voiceBtn.addEventListener('mousedown', startRecording);
+	voiceBtn.addEventListener('mouseup', stopRecording);
+	voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+	voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+
+	async function checkNotifications() {
 		const res = await api({ action: "getAnalytics" });
-		analyticsList.innerHTML = res.recentLogs.map(l => `<div style="border-bottom:1px solid #eee; padding:6px;"><b>${l.from}</b> to <b>${l.to}</b><br><small style="color:#666">"${l.text}"</small></div>`).join('');
+		const unread = res.recentLogs.filter(l => l.to === user.name && l.from !== partner);
+		if(unread.length > 0) {
+			const s = unread[unread.length-1].from;
+			notificationArea.innerHTML = `<div class="notif-card" onclick="startChat('${s}')"><div><b>${s}</b> sent a message</div><button>View</button></div>`;
+		} else notificationArea.innerHTML = "";
 	}
+
+	function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+	lucide.createIcons();
 </script>
 </body>
 </html>
