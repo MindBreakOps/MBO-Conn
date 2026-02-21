@@ -51,6 +51,16 @@
 		.sent { background: #222; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
 		.received { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 		audio { width: 100%; max-width: 220px; margin-top: 5px; }
+		.msg-meta {
+			display: flex;
+			justify-content: flex-end;
+			align-items: center;
+			gap: 3px;
+			font-size: 10px;
+			opacity: 0.7;
+			margin-top: 2px;
+		}
+		.read-check { color: #4fc3f7; } /* Blue color for read */
 		.attachment-preview { 
 			max-width: 100%; 
 			border-radius: 10px; 
@@ -60,6 +70,41 @@
 			border: 1px solid rgba(0,0,0,0.1);
 		}
 		.hidden-input { display: none; }
+		.status-dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			display: inline-block;
+			margin-right: 5px;
+			border: 2px solid #fff;
+		}
+		.online { background-color: #4CAF50; box-shadow: 0 0 5px #4CAF50; }
+		.offline { background-color: #bbb; }
+		.msg-actions {
+			display: none;
+			position: absolute;
+			bottom: 100%;
+			right: 0;
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+			z-index: 1000;
+		}
+		.msg-actions button {
+			background: none; color: #333; padding: 8px 15px; font-size: 12px; border-radius: 0; border-bottom: 1px solid #eee; width: 100%; justify-content: flex-start;
+		}
+		.msg-actions button:last-child { border-bottom: none; color: #ff4444; }
+		.msg:active .msg-actions { display: block; } /* Show menu on hold */
+		/* Show the menu when the message is held or right-clicked */
+		.msg:active .msg-actions, .msg:focus .msg-actions {
+			display: block;
+		}
+		
+		/* Add this to ensure the menu stays visible long enough to click */
+		.msg-actions:hover {
+			display: block;
+		}
 	</style>
 </head>
 <body>
@@ -150,7 +195,7 @@
 </div></div>
 
 <script>
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1vUlNmh1oaKpV_IJgWNaY47vOBvfPNBKpn1sny9nO272rU0m8Vlu-APWA-shfJM_-/exec'; 
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUU7U-sndkmIaUHrY6ZI2BTEaJA9gNrSH0-mbOao79dgMnq6VLlaVzUS_uskwWV24c/exec'; 
 	let user = null, partner = null, isRoom = false, allContacts = [], chatInterval, notifInterval;
 	let mediaRecorder, audioChunks = [], audioContext, analyser, dataArray, animationId, stream;
 
@@ -175,7 +220,7 @@
 		});
 	}
 
-	async function handleLogin() {
+    async function handleLogin() {
 		const res = await api({ action: "login", identifier: idInput.value, password: passInput.value });
 		if(res.status === "success") {
 			user = res.user;
@@ -185,8 +230,23 @@
 			if(user.name.toLowerCase().includes("asim")) document.querySelectorAll('.admin-only').forEach(e => e.style.display='block');
 			switchTab('dashScreen');
 			loadProfiles();
+			
+			// --- ADDED THIS ---
+			startHeartbeat(); 
 			notifInterval = setInterval(checkNotifications, 5000);
 		} else alert("Invalid Login");
+	}
+	
+	function startHeartbeat() {
+		// Ping the server immediately, then every 2 minutes
+		updateMyStatus();
+		setInterval(updateMyStatus, 120000); 
+	}
+	
+	async function updateMyStatus() {
+		if (!user) return;
+		// This tells the Google Sheet "I am still active"
+		await api({ action: "updateStatus", email: user.email });
 	}
 
 	function setupProfile() {
@@ -210,11 +270,29 @@
 		const q = contactSearch.value.toLowerCase();
 		const resDiv = document.getElementById('searchResults');
 		if(q.length < 1) { resDiv.style.display = 'none'; return; }
+		
 		const filtered = allContacts.filter(p => p.name.toLowerCase().includes(q) && p.name !== user.name);
 		resDiv.style.display = 'flex';
+		
 		resDiv.innerHTML = filtered.map(p => {
 			const safeName = p.name.replace(/'/g, "\\'");
-			return `<div class="contact-card" onclick="startChat('${safeName}')"><div><b>${p.name}</b><br><small>${p.job}</small></div><i data-lucide="message-square"></i></div>`;
+			
+			// Logic for the Green Dot
+			const lastSeen = p.lastSeen ? new Date(p.lastSeen) : null;
+			const isOnline = lastSeen && (new Date() - lastSeen < 300000); // Online if active in last 5 mins
+			const dotClass = isOnline ? 'online' : 'offline';
+	
+			return `
+				<div class="contact-card" onclick="startChat('${safeName}')">
+					<div style="display:flex; align-items:center;">
+						<div class="status-dot ${dotClass}"></div>
+						<div>
+							<b>${p.name}</b><br>
+							<small>${p.job}</small>
+						</div>
+					</div>
+					<i data-lucide="message-square"></i>
+				</div>`;
 		}).join('');
 		lucide.createIcons();
 	}
@@ -233,6 +311,14 @@
 	async function loadMessages() {
 		if(!partner) return;
 		const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
+		
+		if (res.messages.length > 0) {
+			const lastMsg = res.messages[res.messages.length - 1];
+			if (lastMsg.sender === partner && lastMsg.status !== 'read') {
+				api({ action: "markRead", me: user.name, partner: partner });
+			}
+		}
+	
 		chatBox.innerHTML = res.messages.map(m => {
 			let mediaContent = '';
 			if (m.media) {
@@ -244,21 +330,61 @@
 					mediaContent = `<a href="${m.media}" target="_blank" style="display:block; margin-top:5px; color:#1a73e8; font-size:12px;">Download Attachment</a>`;
 				}
 			}
+	
+			const isMe = m.sender === user.name;
+			// Using timestamp as the unique ID for Google Sheets
+			const msgId = m.timestamp; 
+			const isEdited = m.status === 'edited' ? '<small style="opacity:0.5">(edited)</small>' : '';
+			const checks = m.status === 'read' ? 
+				'<i data-lucide="check-check" class="read-check" style="width:12px"></i>' : 
+				'<i data-lucide="check" style="width:12px"></i>';
+	
 			return `
-				<div class="msg ${m.sender === user.name ? 'sent' : 'received'}">
+				<div class="msg ${isMe ? 'sent' : 'received'}" oncontextmenu="showActions(event, '${msgId}')" style="position:relative">
 					<small style="display:block; font-size:9px; opacity:0.6">${m.sender}</small>
-					${m.text}
+					<span id="text-${msgId}">${m.text}</span> ${isEdited}
 					${mediaContent}
+					
+					${isMe && m.text !== "🚫 This message was deleted" ? `
+					<div class="msg-actions">
+						<button onclick="editMsg('${msgId}', '${m.text.replace(/'/g, "\\'")}')"><i data-lucide="pencil" style="width:12px"></i> Edit</button>
+						<button onclick="deleteMsg('${msgId}')"><i data-lucide="trash" style="width:12px"></i> Delete</button>
+					</div>` : ''}
+	
+					<div class="msg-meta">
+						${isMe ? checks : ''}
+					</div>
 				</div>
 			`;
 		}).join('');
+		
 		chatBox.scrollTop = chatBox.scrollHeight;
+		lucide.createIcons();
 	}
-
 	async function sendMsg() {
 		const t = chatInput.value; if(!t) return; chatInput.value = "";
 		await api({ action: "sendMessage", sender: user.name, receiver: partner, text: t, isRoom: isRoom });
 		loadMessages();
+	}
+	function editMsg(id, oldText) {
+		const newText = prompt("Edit your message:", oldText);
+		if (newText && newText !== oldText) {
+			api({ action: "editMessage", msgId: id, newText: newText });
+			setTimeout(loadMessages, 500); // Refresh
+		}
+	}
+	
+	function deleteMsg(id) {
+		if (confirm("Delete this message for everyone?")) {
+			api({ action: "deleteMessage", msgId: id });
+			setTimeout(loadMessages, 500); // Refresh
+		}
+	}
+	
+	// Prevents the default phone menu so our custom menu works
+	function showActions(e, id) {
+		e.preventDefault();
+		// In a real app, we'd use a nicer modal, but for now, the CSS handle it.
 	}
 
 	async function initVisualizer(mediaStream) {
