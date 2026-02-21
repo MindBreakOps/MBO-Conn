@@ -256,34 +256,45 @@
 		}).join('');
 		chatBox.scrollTop = chatBox.scrollHeight;
 	}
+	
 
-	// VOICE NOTES
 	voiceBtn.onclick = async () => {
 		if (!mediaRecorder || mediaRecorder.state === "inactive") {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			mediaRecorder = new MediaRecorder(stream);
-			audioChunks = [];
-			mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-			mediaRecorder.onstop = async () => {
-				const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-				const reader = new FileReader();
-				reader.readAsDataURL(audioBlob);
-				reader.onloadend = async () => {
-					await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result, isRoom: isRoom });
-					loadMessages();
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				// Force a universal container format
+				const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+				
+				mediaRecorder = new MediaRecorder(stream, { mimeType });
+				audioChunks = [];
+				
+				mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+				mediaRecorder.onstop = async () => {
+					const audioBlob = new Blob(audioChunks, { type: mimeType });
+					const reader = new FileReader();
+					reader.readAsDataURL(audioBlob);
+					reader.onloadend = async () => {
+						await api({ action: "sendMessage", sender: user.name, receiver: partner, text: "🎤 Voice Note", media: reader.result });
+						loadMessages();
+					};
 				};
-			};
-			mediaRecorder.start();
-			voiceBtn.style.color = "red";
-			voiceBtn.innerHTML = '<i data-lucide="square"></i>';
-			lucide.createIcons();
+	
+				mediaRecorder.start();
+				voiceBtn.classList.add('recording');
+				voiceBtn.innerHTML = '<i data-lucide="square"></i>';
+				lucide.createIcons();
+			} catch (err) { alert("Mic Error: " + err.message); }
 		} else {
 			mediaRecorder.stop();
-			voiceBtn.style.color = "#777";
+			voiceBtn.classList.remove('recording');
 			voiceBtn.innerHTML = '<i data-lucide="mic"></i>';
 			lucide.createIcons();
 		}
 	};
+	
+	function toggleEmoji() { emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'grid' : 'none'; }
+	function addEmoji(e) { chatInput.value += e; toggleEmoji(); }
+	lucide.createIcons();
 
 	// EMOJIS
 	emojiBtn.onclick = () => {
