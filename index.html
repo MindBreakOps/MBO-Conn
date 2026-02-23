@@ -204,16 +204,34 @@
 
 <script>
 	// --- PWA MANIFEST GENERATION ---
-	const manifestStr = JSON.stringify({
-		name: "iMind", short_name: "iMind", start_url: ".", display: "standalone", background_color: "#ffffff", theme_color: "#007AFF",
-		icons: [{ src: "mb.png", sizes: "192x192", type: "image/png" }]
-	});
-	const blob = new Blob([manifestStr], {type: 'application/json'});
-	const manifestURL = URL.createObjectURL(blob);
-	document.querySelector('head').insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
+	// This is the RAW URL I found and fixed for you
+const rawIconURL = "https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png";
+
+const manifestStr = JSON.stringify({
+    "name": "iMind",
+    "short_name": "iMind",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#007AFF",
+    "icons": [
+        { "src": rawIconURL, "sizes": "192x192", "type": "image/png" },
+        { "src": rawIconURL, "sizes": "512x512", "type": "image/png" }
+    ]
+});
+
+const blob = new Blob([manifestStr], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+const head = document.querySelector('head');
+
+// 1. Inject the manifest
+head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
+
+// 2. CRITICAL FIX: This tells iPhones to use your logo for the Home Screen icon
+head.insertAdjacentHTML('beforeend', `<link rel="apple-touch-icon" href="${rawIconURL}">`);
 
 	// --- GLOBAL VARIABLES ---
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzulnWhflGnqAZqZdg38MZg02IqLCZBQFJcZ93Zz9XSADcRxGVlfNehSrZ35WmKVcuO/exec'; 
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdHrO1dW86QGKVG_jqr6Q4mhD5rP1wlQgJ-Rk0dH7AytOuAtUvGMZhKTXlpEi3berv/exec'; 
 	let user = null, partner = null, isRoom = false, allContacts = [], chatInterval;
 	let pendingMedia = ""; // Base64 for images/audio
 	let selectedMsgId = null;
