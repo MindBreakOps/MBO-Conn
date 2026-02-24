@@ -5,433 +5,383 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<title>iMind</title>
+	<title>iMind Pro</title>
 	<script src="https://unpkg.com/lucide@latest"></script>
 	<style>
 		:root { 
-			--ios-blue: #007AFF; --ios-green: #34C759; --ios-red: #FF3B30;
-			--bg-color: linear-gradient(135deg, #a2c2e1 0%, #ffffff 100%);
-			--text-color: #000; --glass-bg: rgba(255, 255, 255, 0.7);
-			--msg-received: #E9E9EB; --msg-sent: #007AFF; --msg-sent-text: #fff;
-			--border-color: rgba(0,0,0,0.1);
+			--primary: #007AFF; --bg: #f0f2f5; --card: #ffffff; --text: #1c1c1e;
+			--msg-in: #ffffff; --msg-out: #dcf8c6; --border: rgba(0,0,0,0.1);
+			--danger: #FF3B30; --success: #34C759;
 		}
-		body.dark-mode {
-			--bg-color: #121212; --text-color: #fff; --glass-bg: rgba(30, 30, 30, 0.8);
-			--msg-received: #333; --msg-sent: #0A84FF; --msg-sent-text: #fff;
-			--border-color: rgba(255,255,255,0.1);
+
+		body.theme-dark { 
+			--bg: #121212; --card: #1e1e1e; --text: #ffffff; 
+			--msg-in: #2d2d2d; --msg-out: #005c4b; --border: rgba(255,255,255,0.1);
 		}
+		body.theme-aqua { --primary: #00bcd4; --bg: #e0f7fa; --msg-out: #b2ebf2; --border: rgba(0,0,0,0.05); }
+
 		* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, sans-serif; }
-		body, html { height: 100%; margin: 0; overflow: hidden; background: var(--bg-color); color: var(--text-color); transition: background 0.3s; }
+		body, html { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--text); transition: 0.3s; }
 		
-		.screen { display: none; height: 100vh; overflow-y: auto; padding-bottom: 100px; }
-		.screen.active { display: block; }
+		.screen { display: none; height: 100vh; flex-direction: column; padding-bottom: 70px; overflow-y: auto; }
+		.screen.active { display: flex; animation: fadeIn 0.3s; }
+		@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+		.glass-header { padding: 15px 20px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 18px; position: sticky; top:0; z-index: 10; }
+		.list-item { display: flex; align-items: center; padding: 15px 20px; background: var(--card); border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+		.list-item img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; object-fit: cover; background: #ddd; }
 		
-		.glass-card { background: var(--glass-bg); backdrop-filter: blur(30px); border: 1px solid var(--border-color); border-radius: 20px; margin: 15px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.05); color: var(--text-color); transition: background 0.3s; }
-		
-		#chatScreen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 1000; flex-direction: column; }
 		#chatBox { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; background-size: cover; background-position: center; }
+		.msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 15px; word-wrap: break-word; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+		.sent { background: var(--msg-out); color: var(--text); align-self: flex-end; border-bottom-right-radius: 4px; }
+		.received { background: var(--msg-in); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+		.msg small.time { display:block; font-size:10px; text-align:right; margin-top:4px; opacity:0.6; }
+
+		input[type="text"], input[type="password"], input[type="email"], select, textarea { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); outline: none; margin-bottom: 15px; font-size: 16px; background: var(--card); color: var(--text); }
+		button.primary-btn { width: 100%; padding: 14px; background: var(--primary); color: white; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; }
 		
-		.msg { max-width: 75%; padding: 10px 16px; border-radius: 20px; margin-bottom: 8px; font-size: 16px; word-wrap: break-word; position: relative; cursor: pointer; }
-		.sent { background: var(--msg-sent); color: var(--msg-sent-text); align-self: flex-end; border-bottom-right-radius: 4px; }
-		.received { background: var(--msg-received); color: var(--text-color); align-self: flex-start; border-bottom-left-radius: 4px; }
-		
-		.nav-bar { position: fixed; bottom: 0; width: 100%; height: 85px; display: none; justify-content: space-around; align-items: center; background: var(--glass-bg); backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); z-index: 500; }
-		.nav-item { color: gray; text-align: center; font-size: 10px; font-weight: 600; cursor: pointer; }
-		.active-nav { color: var(--ios-blue); }
-		
-		input, select, button.primary-btn { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); outline: none; margin-top: 8px; font-size: 16px; background: var(--glass-bg); color: var(--text-color); }
-		button.primary-btn { background: var(--ios-blue); color: white; font-weight: 600; border: none; cursor: pointer; }
-		
-		.chat-header-bar { display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--glass-bg); backdrop-filter:blur(10px); border-bottom:1px solid var(--border-color); }
-		
-		/* Audio Visualizer */
+		.fab { position: fixed; bottom: 85px; right: 20px; width: 56px; height: 56px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 100; }
+		nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--card); display: flex; border-top: 1px solid var(--border); z-index: 500; }
+		.nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight:500; color: gray; cursor: pointer; }
+		.nav-tab.active { color: var(--primary); }
+
+		.settings-group { background: var(--card); margin-top: 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+		.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; }
+		.settings-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; margin-right: 15px; }
+
 		#visualizer { display: none; width: 100px; height: 30px; background: transparent; }
 		.recording-active #visualizer { display: block; }
 		.recording-active #chatInput { display: none; }
-		
 		audio { height: 40px; max-width: 100%; outline: none; }
+		
+		.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 2000; flex-direction: column; overflow-y:auto; }
+		.dark-invert { filter: invert(0); }
+		body.theme-dark .dark-invert { filter: invert(1); }
 	</style>
 </head>
 <body>
 
-<div class="app-container">
-	<div id="loginScreen" class="screen active">
-		<div class="glass-card" style="margin-top: 100px; text-align: center;">
-			<img src="mb.png" alt="iMind Logo" onerror="this.style.display='none'" style="width: 90px; height: 90px; border-radius: 20px; object-fit: cover; margin-bottom: 10px;">
-			<h2 style="margin-top:0;">iMind</h2>
-			<input type="text" id="idInput" placeholder="Email or Phone">
-			<input type="password" id="passInput" placeholder="Password">
-			<button class="primary-btn" onclick="handleLogin()">Sign In</button>
+<div id="loginScreen" class="screen active" style="justify-content:center; align-items:center; padding: 20px;">
+	<div style="width:100%; max-width: 400px; text-align:center;">
+		<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" alt="Logo" class="dark-invert" onerror="this.style.display='none'" style="width: 100px; height: 100px; border-radius: 25px; object-fit: cover; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+		<h1 style="color:var(--text); font-size: 32px; margin-bottom: 30px;">iMind</h1>
+		<input type="text" id="idInput" placeholder="Email or Phone">
+		<input type="password" id="passInput" placeholder="Password">
+		<button class="primary-btn" onclick="handleLogin(this)">Sign In</button>
+	</div>
+</div>
+
+<div id="dashScreen" class="screen">
+	<div class="glass-header"><span>Chats</span> <i data-lucide="edit"></i></div>
+	<div style="padding: 10px 15px;"><input type="text" id="contactSearch" placeholder="Search contacts..." oninput="filterContacts()" style="margin:0; padding:10px; border-radius:10px; background:var(--border); border:none;"></div>
+	
+	<div id="recentChatsList" style="flex:1; overflow-y:auto;">
+		<div style="text-align:center; margin-top:50px; color:gray;">Loading chats...</div>
+	</div>
+	<div id="searchResults" style="display:none; flex-direction:column; position:absolute; top:120px; left:0; width:100%; height:calc(100% - 120px); background:var(--bg); z-index:5;"></div>
+
+	<div class="fab" onclick="openModal('newChatModal')"><i data-lucide="message-square-plus"></i></div>
+</div>
+
+<div id="settingsScreen" class="screen">
+	<div class="glass-header"><span>Settings</span></div>
+	
+	<div class="list-item" style="padding: 20px; margin-top: 20px; border-top: 1px solid var(--border);" onclick="openModal('editProfileModal')">
+		<img id="myPfpDisplay" src="">
+		<div style="flex:1;">
+			<b id="myNameDisplay" style="font-size: 18px;">Name</b><br>
+			<small id="myStatusDisplay" style="opacity:0.6;">Status</small>
 		</div>
+		<i data-lucide="chevron-right" style="color:gray;"></i>
 	</div>
 
-	<div id="dashScreen" class="screen">
-		<div class="glass-card">
-			<h3 style="margin:0"><i data-lucide="search" style="width:18px"></i> Search</h3>
-			<input type="text" id="contactSearch" placeholder="Find someone..." oninput="filterContacts()">
-			<div id="searchResults" style="margin-top:10px; display:none; flex-direction:column;"></div>
-		</div>
-		<div style="padding: 0 15px;">
-			<h4 style="opacity:0.5; font-size:12px;">RECENT CHATS</h4>
-			<div id="recentChatsList"></div>
-		</div>
-	</div>
-
-	<div id="adminScreen" class="screen">
-		<div class="glass-card">
-			<h3>Admin Panel</h3>
-			<div style="display:flex; gap:10px;">
-				<button onclick="openModal('memberModal')" class="primary-btn" style="flex:1;">+ Staff</button>
-				<button onclick="openModal('roomModal')" class="primary-btn" style="flex:1;">+ Room</button>
+	<div class="settings-group">
+		<div class="settings-item" onclick="openModal('themeModal')">
+			<div style="display:flex; align-items:center;">
+				<div class="settings-icon" style="background: var(--primary);"><i data-lucide="palette" style="width:18px;"></i></div>
+				<span>Chat Wallpaper & Theme</span>
 			</div>
-			<h4>Users</h4><div id="adminUserList"></div>
-			<h4>Rooms</h4><div id="adminRoomList"></div>
+			<i data-lucide="chevron-right" style="color:gray;"></i>
 		</div>
 	</div>
 
-	<div id="roomsScreen" class="screen"><div class="glass-card"><h3>Groups</h3><div id="roomList"></div></div></div>
-
-	<div id="profileScreen" class="screen">
-		<div class="glass-card" style="text-align:center; position:relative;">
-			<button onclick="openSettings()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--text-color);"><i data-lucide="settings"></i></button>
-			<div id="myPfpBig" style="width:120px; height:120px; border-radius:50%; background:var(--ios-blue); margin:0 auto; overflow:hidden; display:flex; align-items:center; justify-content:center; color:white; font-size:50px;"></div>
-			<h2 id="myNameDisplay" style="margin:15px 0 5px 0;">Name</h2>
-			<p id="myJobDisplay" style="opacity:0.6; margin:0;"></p>
-			<div id="myStatusBadge" style="display:inline-block; padding:5px 15px; border-radius:15px; margin-top:10px; font-size:12px; font-weight:bold;"></div>
-			
-			<button onclick="location.reload()" style="display:block; width:100%; padding:15px; margin-top:30px; background:none; border:none; color:var(--ios-red); font-weight:600; font-size:16px;">Sign Out</button>
+	<div class="settings-group admin-only" id="adminMenu" style="display:none;">
+		<div class="settings-item" onclick="openAdminConsole()">
+			<div style="display:flex; align-items:center;">
+				<div class="settings-icon" style="background: var(--danger);"><i data-lucide="shield" style="width:18px;"></i></div>
+				<span style="color:var(--danger); font-weight:bold;">Admin Console</span>
+			</div>
+			<i data-lucide="chevron-right" style="color:gray;"></i>
 		</div>
+	</div>
+
+	<div class="settings-group">
+		<div class="settings-item" onclick="location.reload()">
+			<span style="color: var(--danger); width:100%; text-align:center; font-weight:bold;">Log Out</span>
+		</div>
+	</div>
+</div>
+
+<div id="chatScreen" class="modal" style="z-index: 1000;">
+	<div class="glass-header" style="justify-content:flex-start; gap:15px;">
+		<button onclick="closeChat()" style="background:none; border:none; color:var(--primary); padding:0;"><i data-lucide="chevron-left"></i></button>
+		<img id="chatHeaderPfp" src="" style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:#ddd;" onclick="viewPartnerProfile()">
+		<div style="flex:1; cursor:pointer;" onclick="viewPartnerProfile()">
+			<b id="chatHeader" style="font-size:16px;">Name</b>
+			<div id="chatHeaderStatus" style="font-size:12px; opacity:0.6;">Tap for info</div>
+		</div>
+		<button id="callBtn" style="background:none; border:none; color:var(--primary); display:none;"><i data-lucide="phone"></i></button>
 	</div>
 	
-	<div id="settingsModal" class="screen" style="display:none; position:fixed; top:0; background:var(--bg-color); z-index:2000;">
-		<div class="chat-header-bar">
-			<button onclick="closeSettings()" style="background:none; border:none; color:var(--text-color)"><i data-lucide="x"></i></button>
-			<b>Edit Profile</b>
-			<button onclick="saveProfileChanges()" style="color:var(--ios-blue); background:none; border:none; font-weight:bold; font-size:16px;">Done</button>
-		</div>
-		<div class="glass-card">
-			<div style="text-align:center; margin-bottom:15px;">
-				<div id="pfpDisplay" style="width:80px; height:80px; border-radius:50%; background:gray; margin:0 auto 10px auto; overflow:hidden;"></div>
-				<label style="color:var(--ios-blue); font-weight:600; font-size:14px; cursor:pointer;">Change Photo<input type="file" onchange="uploadFile(this, 'pfp')" style="display:none;"></label>
-			</div>
-			<input type="text" id="editName" placeholder="Name">
-			<input type="email" id="editEmail" placeholder="Email">
-			<input type="password" id="editPass" placeholder="Password">
-			<input type="text" id="editPhone" placeholder="Phone">
-			
-			<label style="display:block; margin-top:15px; font-size:12px; font-weight:bold;">STATUS</label>
-			<select id="editStatus">
-				<option value="Available">Available</option>
-				<option value="Busy">Busy</option>
-				<option value="Out of Range">Out of Range</option>
-				<option value="Emergency Only">Emergency Only</option>
-			</select>
-
-			<label style="display:block; margin-top:15px; font-size:12px; font-weight:bold;">CHAT BACKGROUND</label>
-			<input type="file" onchange="uploadFile(this, 'bg')" style="font-size:12px; padding:10px;">
-			<button onclick="clearBg()" style="margin-top:5px; background:none; border:none; color:var(--ios-red); font-size:12px;">Remove Background</button>
-			
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:10px; background:var(--glass-bg); border-radius:12px;">
-				<b style="font-size:14px;">Dark Mode</b>
-				<input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()" style="width:auto; margin:0; transform:scale(1.5);">
-			</div>
-		</div>
-	</div>
-
-	<div id="chatScreen">
-		<div class="chat-header-bar" style="justify-content:flex-start; gap:15px; cursor:pointer;">
-			<button onclick="closeChat()" style="background:none; border:none; color:var(--ios-blue);"><i data-lucide="chevron-left"></i></button>
-			<div id="pfpHeader" style="width:40px; height:40px; border-radius:50%; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center;" onclick="viewPartnerProfile()"></div>
-			<div style="flex:1;" onclick="viewPartnerProfile()">
-				<b id="chatHeader" style="font-size:16px;">Name</b>
-				<div id="chatHeaderStatus" style="font-size:12px; opacity:0.6;">Tap to view profile</div>
-			</div>
-			<button id="callBtn" style="background:none; border:none; color:var(--ios-blue); display:none;"><i data-lucide="phone"></i></button>
-		</div>
-		
-		<div id="chatBox"></div>
-		
-		<div style="padding:10px 15px; background:var(--glass-bg); display:flex; gap:8px; align-items:center;" id="chatControls">
-			<label style="color:var(--ios-blue); margin-top:5px; cursor:pointer;">
-				<i data-lucide="paperclip"></i>
-				<input type="file" id="mediaUpload" style="display:none;" onchange="attachMedia(this)">
-			</label>
-			
-			<canvas id="visualizer"></canvas>
-			<input type="text" id="chatInput" style="margin:0; flex:1; padding:12px; border-radius:20px; border:1px solid var(--border-color);" placeholder="iMessage...">
-			
-			<button id="recordBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="background:none; border:none; color:var(--ios-blue); padding:5px;"><i data-lucide="mic"></i></button>
-			<button onclick="sendMsg()" style="width:40px; height:40px; border-radius:50%; border:none; background:var(--ios-blue); color:white; display:flex; align-items:center; justify-content:center;"><i data-lucide="arrow-up"></i></button>
-		</div>
-	</div>
-
-	<div id="navBar" class="nav-bar">
-		<div class="nav-item active-nav" onclick="switchTab('dashScreen')"><i data-lucide="message-circle"></i><div>Chats</div></div>
-		<div class="nav-item" onclick="switchTab('roomsScreen')"><i data-lucide="users"></i><div>Groups</div></div>
-		<div class="nav-item admin-only" id="navAdmin" style="display:none" onclick="switchTab('adminScreen')"><i data-lucide="shield"></i><div>Admin</div></div>
-		<div class="nav-item" onclick="switchTab('profileScreen')"><i data-lucide="user"></i><div>Profile</div></div>
+	<div id="chatBox"></div>
+	
+	<div style="padding:10px 15px; background:var(--card); display:flex; gap:10px; align-items:center; border-top:1px solid var(--border);" id="chatControls">
+		<label style="color:var(--primary); cursor:pointer;"><i data-lucide="paperclip"></i><input type="file" id="mediaUpload" style="display:none;" onchange="attachMedia(this)"></label>
+		<canvas id="visualizer"></canvas>
+		<input type="text" id="chatInput" style="margin:0; flex:1; padding:10px 15px; border-radius:20px; border:1px solid var(--border); font-size:15px;" placeholder="Message">
+		<button id="recordBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()" style="background:none; border:none; color:var(--primary);"><i data-lucide="mic"></i></button>
+		<button onclick="sendMsg()" style="width:36px; height:36px; border-radius:50%; border:none; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center;"><i data-lucide="send" style="width:16px; margin-right:2px;"></i></button>
 	</div>
 </div>
 
-<div id="memberModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:3000;">
-	<div class="glass-card" style="width:90%">
-		<h3>New Staff</h3>
-		<input id="newStaffName" placeholder="Name">
-		<input id="newStaffEmail" placeholder="Email">
-		<input id="newStaffPass" placeholder="Password">
-		<input id="newStaffJob" placeholder="Job Title">
-		<input id="newStaffPhone" placeholder="Phone">
-		<button class="primary-btn" onclick="saveStaff()">Create</button>
-		<button onclick="closeModal('memberModal')" style="background:none; border:none; color:var(--ios-red); margin-top:15px; width:100%; font-weight:bold;">Cancel</button>
+<div id="newChatModal" class="modal">
+	<div class="glass-header">
+		<button onclick="closeModal('newChatModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>New Chat</span>
+		<div style="width:50px;"></div>
+	</div>
+	<div class="list-item" onclick="closeModal('newChatModal'); showGroupModal();">
+		<div class="settings-icon" style="background:var(--primary); margin-right:15px;"><i data-lucide="users"></i></div>
+		<b style="color:var(--primary);">New Group</b>
+	</div>
+	<div style="padding: 10px 15px; font-size:13px; color:gray; font-weight:bold;">CONTACTS</div>
+	<div id="newChatContactList" style="flex:1; overflow-y:auto;"></div>
+</div>
+
+<div id="groupModal" class="modal">
+	<div class="glass-header">
+		<button onclick="closeModal('groupModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>New Group</span>
+		<button onclick="createGroupFinal()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Create</button>
+	</div>
+	<div style="padding:20px;">
+		<input type="text" id="newGroupName" placeholder="Group Subject (required)">
+		<p style="font-size:13px; color:gray; margin-bottom:5px; font-weight:bold;">SELECT PARTICIPANTS</p>
+	</div>
+	<div id="groupSelectionList" style="flex:1; overflow-y:auto; padding:0 20px;"></div>
+</div>
+
+<div id="editProfileModal" class="modal">
+	<div class="glass-header">
+		<button onclick="closeModal('editProfileModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>Edit Profile</span>
+		<button onclick="saveProfileChanges()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Save</button>
+	</div>
+	<div style="padding:20px; text-align:center;">
+		<img id="editPfpPreview" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:10px;">
+		<label style="display:block; color:var(--primary); font-weight:bold; cursor:pointer; margin-bottom:20px;">Change Photo<input type="file" style="display:none;" onchange="uploadFile(this, 'pfp')"></label>
+		<input type="text" id="editName" placeholder="Name">
+		<input type="text" id="editStatus" placeholder="About / Status">
+		<input type="text" id="editPhone" placeholder="Phone Number">
 	</div>
 </div>
 
-<div id="roomModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:3000;">
-	<div class="glass-card" style="width:90%">
-		<h3>New Group</h3>
-		<input id="newRoomName" placeholder="Group Name">
-		<input id="newRoomMembers" placeholder="Members (comma separated or 'All')">
-		<button class="primary-btn" onclick="saveRoom()">Create Room</button>
-		<button onclick="closeModal('roomModal')" style="background:none; border:none; color:var(--ios-red); margin-top:15px; width:100%; font-weight:bold;">Cancel</button>
+<div id="themeModal" class="modal">
+	<div class="glass-header">
+		<button onclick="closeModal('themeModal')" style="background:none; border:none; color:var(--primary);">Back</button>
+		<span>Theme & Wallpaper</span>
+		<div></div>
+	</div>
+	<div class="settings-group">
+		<div class="settings-item" onclick="setTheme('light')"><span>Light Theme</span></div>
+		<div class="settings-item" onclick="setTheme('dark')"><span>Dark Theme</span></div>
+		<div class="settings-item" onclick="setTheme('aqua')"><span>Aqua Theme</span></div>
+	</div>
+	<div style="padding:20px; text-align:center;">
+		<p style="color:gray; font-size:14px;">Chat Background Image</p>
+		<label class="primary-btn" style="display:inline-block; cursor:pointer; width:auto; padding:10px 20px;">Choose Image<input type="file" style="display:none;" onchange="uploadFile(this, 'bg')"></label>
+		<br><br><button onclick="clearBg()" style="background:none; border:none; color:var(--danger); font-weight:bold;">Remove Background</button>
 	</div>
 </div>
 
-<div id="msgActionMenu" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:var(--glass-bg); backdrop-filter:blur(20px); border-top-left-radius:20px; border-top-right-radius:20px; z-index:4000; padding:20px; box-shadow:0 -5px 20px rgba(0,0,0,0.1);">
-	<button onclick="editSelectedMsg()" style="width:100%; padding:15px; font-size:16px; font-weight:bold; background:none; border:none; color:var(--text-color); border-bottom:1px solid var(--border-color);">Edit Message</button>
-	<button onclick="deleteSelectedMsg()" style="width:100%; padding:15px; font-size:16px; font-weight:bold; background:none; border:none; color:var(--ios-red); border-bottom:1px solid var(--border-color);">Delete Message</button>
-	<button onclick="closeMsgMenu()" style="width:100%; padding:15px; font-size:16px; font-weight:bold; background:none; border:none; color:var(--ios-blue);">Cancel</button>
+<div id="adminModal" class="modal">
+	<div class="glass-header">
+		<button onclick="closeModal('adminModal')" style="background:none; border:none; color:var(--primary);">Back</button>
+		<span>Admin Console</span>
+		<div></div>
+	</div>
+	<div style="padding:15px;">
+		<h4 style="color:gray; margin-bottom:5px;">Manage Users</h4>
+		<div id="adminUserList" style="background:var(--card); border-radius:10px; overflow:hidden;"></div>
+		<h4 style="color:gray; margin-top:20px; margin-bottom:5px;">Manage Groups</h4>
+		<div id="adminRoomList" style="background:var(--card); border-radius:10px; overflow:hidden;"></div>
+	</div>
 </div>
+
+<div id="msgActionMenu" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:var(--card); border-top-left-radius:20px; border-top-right-radius:20px; z-index:4000; padding:20px; box-shadow:0 -5px 20px rgba(0,0,0,0.1);">
+	<button onclick="editSelectedMsg()" style="width:100%; padding:15px; font-size:16px; background:none; border:none; color:var(--text); border-bottom:1px solid var(--border);">Edit</button>
+	<button onclick="deleteSelectedMsg()" style="width:100%; padding:15px; font-size:16px; background:none; border:none; color:var(--danger); border-bottom:1px solid var(--border);">Delete for everyone</button>
+	<button onclick="closeMsgMenu()" style="width:100%; padding:15px; font-size:16px; font-weight:bold; background:none; border:none; color:var(--primary);">Cancel</button>
+</div>
+
+<nav id="navBar" style="display:none;">
+	<div class="nav-tab active" onclick="switchTab('dashScreen', this)"><i data-lucide="message-circle"></i>Chats</div>
+	<div class="nav-tab" onclick="switchTab('settingsScreen', this)"><i data-lucide="settings"></i>Settings</div>
+</nav>
 
 <script>
 	// --- PWA MANIFEST GENERATION ---
-	// This is the RAW URL I found and fixed for you
-const rawIconURL = "https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png";
+	const rawIconURL = "https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png";
+	const manifestStr = JSON.stringify({
+		"name": "iMind Pro", "short_name": "iMind", "start_url": ".", "display": "standalone",
+		"background_color": "#ffffff", "theme_color": "#007AFF",
+		"icons": [{ "src": rawIconURL, "sizes": "512x512", "type": "image/png" }]
+	});
+	const blob = new Blob([manifestStr], {type: 'application/json'});
+	const head = document.querySelector('head');
+	head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
+	head.insertAdjacentHTML('beforeend', `<link rel="apple-touch-icon" href="${rawIconURL}">`);
 
-const manifestStr = JSON.stringify({
-    "name": "iMind",
-    "short_name": "iMind",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#007AFF",
-    "icons": [
-        { "src": rawIconURL, "sizes": "192x192", "type": "image/png" },
-        { "src": rawIconURL, "sizes": "512x512", "type": "image/png" }
-    ]
-});
+	// --- GLOBALS & CONFIG ---
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNIi5OXvcvmbmSTiQny5XHPNOBx3ZRkt6ksl0kIbzPsAUFA4hRjma8AW-2p1BH8-8x/exec'; 
+	let user = null, partner = null, isRoom = false, allContacts = [], allRooms = [], chatInterval;
+	let pendingMedia = "", selectedMsgId = null;
 
-const blob = new Blob([manifestStr], {type: 'application/json'});
-const manifestURL = URL.createObjectURL(blob);
-const head = document.querySelector('head');
-
-// 1. Inject the manifest
-head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
-
-// 2. CRITICAL FIX: This tells iPhones to use your logo for the Home Screen icon
-head.insertAdjacentHTML('beforeend', `<link rel="apple-touch-icon" href="${rawIconURL}">`);
-
-	// --- GLOBAL VARIABLES ---
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdHrO1dW86QGKVG_jqr6Q4mhD5rP1wlQgJ-Rk0dH7AytOuAtUvGMZhKTXlpEi3berv/exec'; 
-	let user = null, partner = null, isRoom = false, allContacts = [], chatInterval;
-	let pendingMedia = ""; // Base64 for images/audio
-	let selectedMsgId = null;
-
-	const STATUS_COLORS = { "Available": "#34C759", "Busy": "#FF9500", "Out of Range": "#8E8E93", "Emergency Only": "#FF3B30" };
-
-	// --- API & SPEED FIX ---
 	async function api(p) {
-		const postActions = ["sendMessage", "addStaff", "addRoom", "deleteUser", "deleteRoom", "updateProfile", "editMessage", "deleteMessage", "clearChat"];
-		if (postActions.includes(p.action)) {
-			const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(p), headers: { "Content-Type": "text/plain" } });
-			return await r.json();
-		}
-		return new Promise(res => {
-			const cb = 'cb'+Math.round(Math.random()*100000);
-			window[cb] = d => { res(d); delete window[cb]; };
-			const s = document.createElement('script');
-			s.src = `${SCRIPT_URL}?${new URLSearchParams(p)}&callback=${cb}`;
-			document.body.appendChild(s);
-		});
-	}
-
-	// Polling Optimization (Stops polling if app is in background)
-	function smartPolling() {
-		if (!document.hidden && partner) loadMessages();
+		const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(p) });
+		return await r.json();
 	}
 
 	// --- INITIALIZATION ---
-	async function handleLogin() {
-		const btn = event.target; btn.innerText = "Loading...";
+	async function handleLogin(btn) {
+		btn.innerText = "Connecting...";
 		const res = await api({ action: "login", identifier: document.getElementById('idInput').value, password: document.getElementById('passInput').value });
 		if(res.status === "success") {
 			user = res.user;
 			document.getElementById('loginScreen').classList.remove('active');
 			document.getElementById('navBar').style.display = 'flex';
-			if(user.type === "Admin" || user.name.toLowerCase().includes("asim")) document.getElementById('navAdmin').style.display = 'flex';
 			
-			// Check Background & Dark Mode
+			if(user.type === "Admin") document.getElementById('adminMenu').style.display = 'block';
+			
 			if(user.bg) document.getElementById('chatBox').style.backgroundImage = `url(${user.bg})`;
-			if(localStorage.getItem('darkMode') === 'true') {
-				document.body.classList.add('dark-mode');
-				document.getElementById('darkModeToggle').checked = true;
-			}
-
-			setupProfile(); switchTab('dashScreen');
-			setInterval(() => api({ action: "updateStatus", email: user.email }), 60000);
+			if(user.theme) document.body.className = `theme-${user.theme}`;
+			
+			setupProfileUI();
+			await loadData();
+			switchTab('dashScreen', document.querySelectorAll('.nav-tab')[0]);
+			
+			fetchRecentChats(); setInterval(fetchRecentChats, 10000); 
 		} else {
 			alert("Invalid Login"); btn.innerText = "Sign In";
 		}
 	}
 
-	function switchTab(id) {
-		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-		document.getElementById(id).classList.add('active');
-		event.currentTarget.classList.add('active-nav');
+	async function loadData() {
+		const resC = await api({ action: "getProfiles" }); allContacts = resC.profiles || [];
+		const resR = await api({ action: "getRooms" }); allRooms = resR.rooms || [];
 		
-		if (id === 'dashScreen') { loadProfiles(); loadRecentChats(); }
-		else if (id === 'adminScreen') loadAdminPanel();
-		else if (id === 'roomsScreen') loadRooms();
+		// Populate New Chat Contact List
+		document.getElementById('newChatContactList').innerHTML = allContacts.filter(u => u.name !== user.name).map(p => `
+			<div class="list-item" onclick="closeModal('newChatModal'); startChat('${p.name}', false);">
+				<img src="${p.pfp || `https://ui-avatars.com/api/?name=${p.name}`}">
+				<div style="flex:1"><b>${p.name}</b><br><small style="color:gray;">${p.status}</small></div>
+			</div>`).join('');
+	}
+
+	function switchTab(id, el) {
+		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+		document.getElementById(id).classList.add('active');
+		if(el) {
+			document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
+			el.classList.add('active');
+		}
 		lucide.createIcons();
 	}
 
-	function toggleDarkMode() {
-		const isDark = document.getElementById('darkModeToggle').checked;
-		document.body.classList.toggle('dark-mode', isDark);
-		localStorage.setItem('darkMode', isDark);
+	// --- RECENTS ---
+	async function fetchRecentChats() {
+		if(document.getElementById('dashScreen').classList.contains('active')) {
+			const res = await api({ action: "getRecentChats", me: user.name });
+			const list = document.getElementById('recentChatsList');
+			if(!res.recents || res.recents.length === 0) {
+				list.innerHTML = `<div style="text-align:center; padding:30px; color:gray;">No chats yet. Tap the + icon to start!</div>`;
+				return;
+			}
+			list.innerHTML = res.recents.map(r => {
+				let pfp;
+				if(r.isRoom) {
+					const rm = allRooms.find(x => x.name === r.partner);
+					pfp = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${r.partner}&background=random`;
+				} else {
+					const contact = allContacts.find(c => c.name === r.partner) || {};
+					pfp = contact.pfp || `https://ui-avatars.com/api/?name=${r.partner}`;
+				}
+				return `
+				<div class="list-item" onclick="startChat('${r.partner}', ${r.isRoom})">
+					<img src="${pfp}">
+					<div style="flex:1;">
+						<div style="display:flex; justify-content:space-between;">
+							<b style="font-size:16px;">${r.partner}</b>
+							<small style="color:gray;">${r.time}</small>
+						</div>
+						<div style="color:gray; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${r.lastMsg}</div>
+					</div>
+				</div>`;
+			}).join('');
+		}
 	}
 
-	// --- PROFILE ---
-	function setupProfile() {
-		if(!user) return;
-		document.getElementById('myNameDisplay').innerText = user.name;
-		document.getElementById('myJobDisplay').innerText = user.job || 'Staff';
+	// --- GROUPS ---
+	function showGroupModal() {
+		const list = document.getElementById('groupSelectionList');
+		list.innerHTML = allContacts.filter(u => u.name !== user.name).map(u => `
+			<div class="list-item" style="padding:10px 0;">
+				<input type="checkbox" class="group-checkbox" value="${u.name}" style="width:20px; height:20px; margin-right:15px;">
+				<img src="${u.pfp || `https://ui-avatars.com/api/?name=${u.name}`}" style="width:40px; height:40px;">
+				<b>${u.name}</b>
+			</div>
+		`).join('');
+		document.getElementById('groupModal').style.display = 'flex';
+	}
+
+	async function createGroupFinal() {
+		const name = document.getElementById('newGroupName').value;
+		const checked = Array.from(document.querySelectorAll('.group-checkbox:checked')).map(c => c.value);
+		checked.push(user.name);
+		if(!name || checked.length < 2) return alert("Enter name and select at least 1 person.");
 		
-		const badge = document.getElementById('myStatusBadge');
-		const sColor = STATUS_COLORS[user.status || "Available"];
-		badge.innerText = user.status || "Available";
-		badge.style.background = sColor + "22"; badge.style.color = sColor;
-
-		document.getElementById('myPfpBig').innerHTML = user.pfp ? `<img src="${user.pfp}" style="width:100%; height:100%; object-fit:cover;">` : user.name[0];
-
-		// Edit Settings
-		document.getElementById('editName').value = user.name;
-		document.getElementById('editEmail').value = user.email;
-		document.getElementById('editPass').value = user.password || "";
-		document.getElementById('editPhone').value = user.phone;
-		document.getElementById('editStatus').value = user.status || "Available";
-		document.getElementById('pfpDisplay').innerHTML = user.pfp ? `<img src="${user.pfp}" style="width:100%; height:100%; object-fit:cover;">` : "";
+		await api({ action: "addRoom", name: name, members: checked.join(',') });
+		closeModal('groupModal');
+		await loadData(); // refresh rooms
+		fetchRecentChats();
+		startChat(name, true);
 	}
 
-	function openSettings() { document.getElementById('settingsModal').style.display = 'block'; }
-	function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; setupProfile(); }
-
-	function uploadFile(input, type) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = () => {
-            // Create a canvas to resize the image
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 200; // Small size for fast loading/saving
-            const scaleSize = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            // Convert to a compressed JPEG
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); 
-
-            if(type === 'pfp') {
-                document.getElementById('pfpDisplay').innerHTML = `<img src="${compressedBase64}" style="width:100%; height:100%; object-fit:cover;">`;
-                user.pfp = compressedBase64; 
-            } else if (type === 'bg') {
-                user.bg = compressedBase64;
-                document.getElementById('chatBox').style.backgroundImage = `url(${compressedBase64})`;
-            }
-        };
-    };
-    reader.readAsDataURL(input.files[0]);
-}
-
-	function clearBg() { user.bg = ""; document.getElementById('chatBox').style.backgroundImage = "none"; }
-
-	async function saveProfileChanges() {
-		const payload = {
-			action: "updateProfile", oldEmail: user.email,
-			name: document.getElementById('editName').value, email: document.getElementById('editEmail').value,
-			password: document.getElementById('editPass').value, phone: document.getElementById('editPhone').value,
-			status: document.getElementById('editStatus').value, pfp: user.pfp || "", bg: user.bg || ""
-		};
-		const res = await api(payload);
-		if(res.status === "success") { user = res.user; setupProfile(); closeSettings(); }
-	}
-
-	// --- CONTACTS & CHAT ---
-	async function loadProfiles() { const res = await api({ action: "getProfiles" }); allContacts = res.profiles || []; }
-	
-	function filterContacts() {
-		const q = document.getElementById('contactSearch').value.toLowerCase();
-		const resDiv = document.getElementById('searchResults');
-		if(q.length < 1) { resDiv.style.display = 'none'; return; }
-		
-		const filtered = allContacts.filter(p => p.name.toLowerCase().includes(q) && p.name !== user.name);
-		resDiv.style.display = 'flex';
-		resDiv.innerHTML = filtered.map(p => `
-			<div class="glass-card" onclick="startChat('${p.name}')" style="margin:5px 0; display:flex; align-items:center; padding:10px; cursor:pointer;">
-				<div style="width:40px; height:40px; border-radius:50%; background:var(--ios-blue); overflow:hidden; display:flex; align-items:center; justify-content:center; color:white; margin-right:15px;">
-					${p.pfp ? `<img src="${p.pfp}" style="width:100%; height:100%; object-fit:cover;">` : p.name[0]}
-				</div>
-				<div style="flex:1"><b>${p.name}</b><br><small style="color:${STATUS_COLORS[p.status]}">• ${p.status}</small></div>
-			</div>`).join('');
-	}
-
-	async function loadRecentChats() {
-		const res = await api({ action: "getMessages", me: user.name, partner: "ALL", isRoom: false }); // Light version
-		// Implementation note: a true robust recent chats requires a separate API action. 
-		// Displaying a generic list based on contacts for UI presentation.
-		document.getElementById('recentChatsList').innerHTML = allContacts.filter(c => c.name !== user.name).map(c => `
-			<div class="glass-card" onclick="startChat('${c.name}')" style="margin:5px 0; display:flex; align-items:center; padding:12px; cursor:pointer;">
-				<div style="width:45px; height:45px; background:var(--ios-blue); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-right:15px; overflow:hidden;">
-					${c.pfp ? `<img src="${c.pfp}" style="width:100%; height:100%; object-fit:cover;">` : c.name[0]}
-				</div>
-				<div style="flex:1;"><b>${c.name}</b></div>
-			</div>`).join('');
-	}
-
+	// --- CHAT LOGIC ---
 	function startChat(name, isRm = false) {
 		partner = name; isRoom = isRm;
 		document.getElementById('chatHeader').innerText = name;
-		const pfpHeader = document.getElementById('pfpHeader');
-		const callBtn = document.getElementById('callBtn');
 		
-		if(isRoom) {
-			pfpHeader.innerHTML = `<i data-lucide="users" style="color:gray;"></i>`;
-			callBtn.style.display = "none";
+		if(isRm) {
+			const rm = allRooms.find(x => x.name === name);
+			document.getElementById('chatHeaderPfp').src = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${name}&background=random`;
 		} else {
-			const c = allContacts.find(x => x.name === name);
-			pfpHeader.innerHTML = c && c.pfp ? `<img src="${c.pfp}" style="width:100%; height:100%; object-fit:cover;">` : `<span style="color:white;">${name[0]}</span>`;
-			if(c && c.phone) {
-				callBtn.style.display = "block";
-				callBtn.onclick = () => window.location.href = `tel:${c.phone}`;
-			} else callBtn.style.display = "none";
+			const contact = allContacts.find(c => c.name === name) || {};
+			document.getElementById('chatHeaderPfp').src = contact.pfp || `https://ui-avatars.com/api/?name=${name}`;
 		}
+		
+		const callBtn = document.getElementById('callBtn');
+		callBtn.style.display = "block";
+		callBtn.onclick = () => window.open(`https://meet.jit.si/iMind_${name.replace(/\s/g, '_')}`, '_blank');
 
 		document.getElementById('chatScreen').style.display = 'flex';
-		loadMessages(); 
-		clearInterval(chatInterval); 
-		chatInterval = setInterval(smartPolling, 5000); // 5 seconds for stability
-		lucide.createIcons();
+		loadMessages(); clearInterval(chatInterval); 
+		chatInterval = setInterval(() => { if(!document.hidden) loadMessages(); }, 5000);
 	}
 
 	async function loadMessages() {
 		if(!partner) return;
 		const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
-		
 		const chatBox = document.getElementById('chatBox');
 		const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
 
@@ -439,175 +389,181 @@ head.insertAdjacentHTML('beforeend', `<link rel="apple-touch-icon" href="${rawIc
 			let content = m.text;
 			if (m.media.startsWith("data:audio")) content += `<br><audio controls src="${m.media}"></audio>`;
 			else if (m.media.startsWith("data:image")) content += `<br><img src="${m.media}" style="max-width:100%; border-radius:10px; margin-top:5px;">`;
-			
 			return `
 			<div class="msg ${m.sender === user.name ? 'sent' : 'received'}" oncontextmenu="openMsgMenu(event, '${m.msgId}', '${m.sender}')" ondblclick="openMsgMenu(event, '${m.msgId}', '${m.sender}')">
-				${isRoom && m.sender !== user.name ? `<small style="display:block; font-size:10px; opacity:0.6;">${m.sender}</small>` : ''}
+				${isRoom && m.sender !== user.name ? `<small style="display:block; font-weight:bold; font-size:11px; color:var(--primary); margin-bottom:2px;">${m.sender}</small>` : ''}
 				${content}
-				<small style="display:block; font-size:9px; text-align:right; margin-top:4px; opacity:0.7">${m.time}</small>
+				<small class="time">${m.time} ${m.status==='edited'?'(edited)':''}</small>
 			</div>`;
 		}).join('');
-		
 		if (isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
-	}
-
-	// Media & Voice Notes
-	function attachMedia(input) {
-		if (!input.files[0]) return;
-		const reader = new FileReader();
-		reader.onload = (e) => { pendingMedia = e.target.result; document.getElementById('chatInput').placeholder = "Media attached. Type caption..."; };
-		reader.readAsDataURL(input.files[0]);
-	}
-
-	let mediaRecorder, audioChunks = [];
-	async function startRecording() {
-		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			mediaRecorder = new MediaRecorder(stream);
-			mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-			mediaRecorder.onstop = () => {
-				const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-				const reader = new FileReader();
-				reader.readAsDataURL(audioBlob);
-				reader.onloadend = () => { pendingMedia = reader.result; sendMsg("🎙️ Voice Note"); };
-				audioChunks = [];
-			};
-			mediaRecorder.start();
-			document.getElementById('chatControls').classList.add('recording-active');
-			drawVisualizer(); // Start fake wave animation
-		} catch(e) { alert("Microphone access denied."); }
-	}
-	function stopRecording() { if(mediaRecorder && mediaRecorder.state === "recording") { mediaRecorder.stop(); document.getElementById('chatControls').classList.remove('recording-active'); } }
-	
-	function drawVisualizer() {
-		const canvas = document.getElementById("visualizer");
-		const ctx = canvas.getContext("2d");
-		if(!document.getElementById('chatControls').classList.contains('recording-active')) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = "#007AFF";
-		for(let i=0; i<5; i++) {
-			let h = Math.random() * 20 + 5;
-			ctx.fillRect(i*20 + 10, 15 - h/2, 10, h);
-		}
-		requestAnimationFrame(drawVisualizer);
 	}
 
 	async function sendMsg(overrideText = null) {
 		const inp = document.getElementById('chatInput');
 		const text = overrideText || inp.value.trim();
 		if(!text && !pendingMedia) return;
-		
 		await api({ action: "sendMessage", sender: user.name, receiver: partner, text: text, media: pendingMedia, isRoom: isRoom });
-		inp.value = ""; pendingMedia = ""; inp.placeholder = "iMessage...";
+		inp.value = ""; pendingMedia = ""; inp.placeholder = "Message";
 		loadMessages();
 	}
 
-	// Message Actions (Edit/Delete)
+	// --- MESSAGE ACTIONS ---
 	function openMsgMenu(e, id, sender) {
 		e.preventDefault();
-		if (sender !== user.name && user.type !== "Admin") return; // Only author or admin can modify
-		selectedMsgId = id;
-		document.getElementById('msgActionMenu').style.display = 'block';
+		if (sender !== user.name && user.type !== "Admin") return;
+		selectedMsgId = id; document.getElementById('msgActionMenu').style.display = 'block';
 	}
 	function closeMsgMenu() { document.getElementById('msgActionMenu').style.display = 'none'; selectedMsgId = null; }
-	
-	async function editSelectedMsg() {
-		closeMsgMenu();
-		const newText = prompt("Edit message:");
-		if(newText) {
-			await api({ action: "editMessage", msgId: selectedMsgId, newText: newText, receiver: partner, isRoom: isRoom });
-			loadMessages();
-		}
-	}
-	async function deleteSelectedMsg() {
-		closeMsgMenu();
-		if(confirm("Delete this message?")) {
-			await api({ action: "deleteMessage", msgId: selectedMsgId, receiver: partner, isRoom: isRoom });
-			loadMessages();
-		}
-	}
+	async function editSelectedMsg() { closeMsgMenu(); const t = prompt("Edit message:"); if(t) { await api({ action: "editMessage", msgId: selectedMsgId, newText: t, receiver: partner, isRoom: isRoom }); loadMessages(); } }
+	async function deleteSelectedMsg() { closeMsgMenu(); if(confirm("Delete for everyone?")) { await api({ action: "deleteMessage", msgId: selectedMsgId, receiver: partner, isRoom: isRoom }); loadMessages(); } }
 
-	// Partner Profile View
+	// --- PARTNER / GROUP PROFILES ---
 	function viewPartnerProfile() {
-		if (isRoom) return; 
-		const p = allContacts.find(c => c.name === partner);
-		if(!p) return;
-		
 		const overlay = document.createElement('div');
-		overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:var(--glass-bg); backdrop-filter:blur(20px); z-index:3000; padding:20px; text-align:center; overflow-y:auto;";
-		overlay.innerHTML = `
-			<button onclick="this.parentElement.remove()" style="float:left; background:none; border:none; padding:10px; color:var(--text-color);"><i data-lucide="chevron-left"></i></button>
-			<div style="margin-top:60px; padding-bottom:50px;">
-				<div style="width:150px; height:150px; border-radius:50%; background:var(--ios-blue); margin:0 auto; overflow:hidden; display:flex; align-items:center; justify-content:center; color:white;">
-					${p.pfp ? `<img src="${p.pfp}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="font-size:60px;">${p.name[0]}</div>`}
+		overlay.className = "modal"; overlay.style.display = "flex"; overlay.style.background = "var(--bg)";
+		
+		if(isRoom) {
+			const rm = allRooms.find(x => x.name === partner) || {name: partner, description: "No description", rules: "No rules", members: ""};
+			const pfp = rm.icon || `https://ui-avatars.com/api/?name=${partner}&background=random`;
+			
+			overlay.innerHTML = `
+				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Group Info</span><div></div></div>
+				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);">
+					<img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+					<h2 style="margin:0;">${partner}</h2>
+					<p style="color:gray;">Group • ${rm.members.split(',').length} participants</p>
 				</div>
-				<h1 style="margin:20px 0 5px 0;">${p.name}</h1>
-				<p style="opacity:0.6; margin:0;">${p.job || 'Staff'}</p>
-				<div style="display:inline-block; padding:5px 15px; border-radius:15px; margin-top:15px; font-size:12px; font-weight:bold; background:${STATUS_COLORS[p.status]}22; color:${STATUS_COLORS[p.status]}">${p.status || 'Available'}</div>
-				
-				<div style="display:flex; justify-content:center; gap:20px; margin-top:20px;">
-					<a href="tel:${p.phone}" style="background:var(--ios-blue); color:white; padding:15px; border-radius:50%; text-decoration:none;"><i data-lucide="phone"></i></a>
+				<div class="settings-group" style="padding:15px 20px;">
+					<b style="color:var(--primary); font-size:14px;">Description</b>
+					<p style="margin:5px 0;">${rm.description}</p>
 				</div>
-
-				<div class="glass-card" style="text-align:left; margin-top:30px;">
-					<p><b><i data-lucide="mail" style="width:16px;"></i> Email:</b> ${p.email}</p>
-					<hr style="opacity:0.1;">
-					<p><b><i data-lucide="clock" style="width:16px;"></i> Last Seen:</b> ${p.lastSeen || 'Recently'}</p>
+				<div class="settings-group" style="padding:15px 20px;">
+					<b style="color:var(--primary); font-size:14px;">Rules</b>
+					<p style="margin:5px 0;">${rm.rules}</p>
 				</div>
-				
-				${user.type === "Admin" ? `<button onclick="clearCurrentChat()" style="width:100%; padding:15px; border-radius:12px; border:none; background:var(--ios-red); color:white; margin-top:20px; font-weight:bold;">Clear Chat History</button>` : ''}
-			</div>
-		`;
-		document.body.appendChild(overlay);
-		lucide.createIcons();
+				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Join Call</span></div></div>
+				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
+			`;
+		} else {
+			const contact = allContacts.find(c => c.name === partner) || { name: partner, status: "Available", phone: "" };
+			const pfp = contact.pfp || `https://ui-avatars.com/api/?name=${partner}`;
+			overlay.innerHTML = `
+				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Contact Info</span><div></div></div>
+				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);">
+					<img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+					<h2 style="margin:0;">${partner}</h2><p style="color:gray;">${contact.phone}</p>
+				</div>
+				<div class="settings-group" style="padding:15px 20px;">
+					<b style="color:var(--primary); font-size:14px;">About</b>
+					<p style="margin:5px 0;">${contact.status}</p>
+				</div>
+				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Audio/Video Call</span></div></div>
+				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
+			`;
+		}
+		document.body.appendChild(overlay); lucide.createIcons();
 	}
 
 	async function clearCurrentChat() {
-		if(confirm("Admin Action: Erase all messages in this conversation permanently?")) {
+		if(confirm("Erase all messages in this conversation permanently?")) {
 			await api({ action: "clearChat", me: user.name, partner: partner, isRoom: isRoom });
-			alert("Chat cleared."); document.querySelector('div[style*="z-index:3000"]').remove(); loadMessages();
+			alert("Chat cleared."); document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'chatScreen') m.remove(); }); loadMessages();
 		}
 	}
 
-	// --- ADMIN LOGIC ---
-	async function loadAdminPanel() {
-		const resP = await api({ action: "getProfiles" }); const resR = await api({ action: "getRooms" });
-		document.getElementById('adminUserList').innerHTML = (resP.profiles || []).map(p => `
-			<div class="glass-card" style="margin:5px 0; display:flex; justify-content:space-between; align-items:center; padding:10px;">
-				<span>${p.name}</span><button onclick="deleteUser('${p.name}')" style="color:red; background:none; border:none;"><i data-lucide="trash-2"></i></button>
-			</div>`).join('');
-		document.getElementById('adminRoomList').innerHTML = (resR.rooms || []).map(r => `
-			<div class="glass-card" style="margin:5px 0; display:flex; justify-content:space-between; align-items:center; padding:10px;">
-				<span>${r.name} (${r.members})</span><button onclick="deleteRoom('${r.name}')" style="color:red; background:none; border:none;"><i data-lucide="trash-2"></i></button>
-			</div>`).join('');
-		lucide.createIcons();
+	// --- PROFILE & SETTINGS FIXES ---
+	function setupProfileUI() {
+		document.getElementById('myNameDisplay').innerText = user.name;
+		document.getElementById('myStatusDisplay').innerText = user.status;
+		document.getElementById('myPfpDisplay').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
+		
+		document.getElementById('editName').value = user.name;
+		document.getElementById('editStatus').value = user.status;
+		document.getElementById('editPhone').value = user.phone;
+		document.getElementById('editPfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
 	}
 
-	async function deleteUser(name) { if(confirm(`Delete ${name}?`)) { await api({ action: "deleteUser", name: name }); loadAdminPanel(); } }
-	async function deleteRoom(name) { if(confirm(`Delete ${name}?`)) { await api({ action: "deleteRoom", name: name }); loadAdminPanel(); } }
+	async function saveProfileChanges() {
+		const name = document.getElementById('editName').value;
+		const stat = document.getElementById('editStatus').value;
+		const ph = document.getElementById('editPhone').value;
+		
+		const res = await api({ action: "updateProfile", oldEmail: user.email, name: name, status: stat, phone: ph, pfp: user.pfp });
+		if(res.status === "success") {
+			user = res.user; setupProfileUI(); closeModal('editProfileModal'); alert("Profile updated!");
+		}
+	}
+
+	function uploadFile(input, type) {
+		if (!input.files[0]) return;
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const img = new Image(); img.src = e.target.result;
+			img.onload = () => {
+				const canvas = document.createElement('canvas');
+				const scale = (type==='pfp'?200:600) / img.width; 
+				canvas.width = (type==='pfp'?200:600); canvas.height = img.height * scale;
+				const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+				const b64 = canvas.toDataURL('image/jpeg', 0.6);
+				
+				if(type === 'pfp') { user.pfp = b64; document.getElementById('editPfpPreview').src = b64; }
+				if(type === 'bg') { user.bg = b64; document.getElementById('chatBox').style.backgroundImage = `url(${b64})`; api({ action: "updateProfile", oldEmail: user.email, bg: b64 }); }
+			};
+		};
+		reader.readAsDataURL(input.files[0]);
+	}
 	
-	async function saveRoom() { 
-		const n = document.getElementById('newRoomName').value; const m = document.getElementById('newRoomMembers').value;
-		if(n) { await api({ action: "addRoom", name: n, members: m || "All" }); closeModal('roomModal'); loadAdminPanel(); } 
-	}
-	async function saveStaff() {
-		await api({ action: "addStaff", name: document.getElementById('newStaffName').value, email: document.getElementById('newStaffEmail').value, pass: document.getElementById('newStaffPass').value, job: document.getElementById('newStaffJob').value, phone: document.getElementById('newStaffPhone').value });
-		closeModal('memberModal'); loadAdminPanel();
+	function clearBg() { user.bg = ""; document.getElementById('chatBox').style.backgroundImage = "none"; api({ action: "updateProfile", oldEmail: user.email, bg: "" }); }
+	
+	function setTheme(t) {
+		document.body.className = `theme-${t}`;
+		api({ action: "updateProfile", oldEmail: user.email, theme: t });
 	}
 
-	async function loadRooms() {
-		const res = await api({ action: "getRooms" });
-		document.getElementById('roomList').innerHTML = (res.rooms || []).filter(r => r.members === "All" || r.members.includes(user.name)).map(r => `
-			<div class="glass-card" onclick="startChat('${r.name}', true)" style="cursor:pointer; display:flex; align-items:center;">
-				<div style="width:40px; height:40px; border-radius:50%; background:var(--border-color); display:flex; align-items:center; justify-content:center; margin-right:15px;"><i data-lucide="users"></i></div>
-				<b style="font-size:16px;">${r.name}</b>
-			</div>`).join('');
-		lucide.createIcons();
+	// --- ADMIN PANEL FIXES ---
+	async function openAdminConsole() {
+		const userList = document.getElementById('adminUserList');
+		const roomList = document.getElementById('adminRoomList');
+		
+		userList.innerHTML = allContacts.map(c => `<div class="settings-item"><span>${c.name}</span> <i data-lucide="trash" style="color:var(--danger);" onclick="adminDeleteUser('${c.name}')"></i></div>`).join('');
+		roomList.innerHTML = allRooms.map(r => `<div class="settings-item"><span>${r.name}</span> <i data-lucide="trash" style="color:var(--danger);" onclick="adminDeleteRoom('${r.name}')"></i></div>`).join('');
+		
+		lucide.createIcons(); openModal('adminModal');
+	}
+	
+	async function adminDeleteUser(name) { if(confirm(`Delete user ${name}?`)) { await api({action: "deleteUser", name: name}); loadData(); openAdminConsole(); } }
+	async function adminDeleteRoom(name) { if(confirm(`Delete group ${name}?`)) { await api({action: "deleteRoom", name: name}); loadData(); openAdminConsole(); } }
+
+	// --- MEDIA & RECORDER ---
+	function attachMedia(input) {
+		if (!input.files[0]) return; const reader = new FileReader();
+		reader.onload = (e) => { 
+			const img = new Image(); img.src = e.target.result;
+			img.onload = () => {
+				const canvas = document.createElement('canvas'); const scale = 400 / img.width; canvas.width = 400; canvas.height = img.height * scale;
+				const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+				pendingMedia = canvas.toDataURL('image/jpeg', 0.6); document.getElementById('chatInput').placeholder = "Image attached...";
+			};
+		};
+		reader.readAsDataURL(input.files[0]);
 	}
 
-	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+	let mediaRecorder, audioChunks = [];
+	async function startRecording() {
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream);
+			mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+			mediaRecorder.onstop = () => { const r = new FileReader(); r.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' })); r.onloadend = () => { pendingMedia = r.result; sendMsg("🎙️ Voice Note"); }; audioChunks = []; };
+			mediaRecorder.start(); document.getElementById('chatControls').classList.add('recording-active'); drawVisualizer(); 
+		} catch(e) { alert("Mic denied."); }
+	}
+	function stopRecording() { if(mediaRecorder && mediaRecorder.state === "recording") { mediaRecorder.stop(); document.getElementById('chatControls').classList.remove('recording-active'); } }
+	function drawVisualizer() { const canvas = document.getElementById("visualizer"); const ctx = canvas.getContext("2d"); if(!document.getElementById('chatControls').classList.contains('recording-active')) { ctx.clearRect(0,0,canvas.width,canvas.height); return; } ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "var(--primary)"; for(let i=0; i<5; i++) { let h = Math.random() * 20 + 5; ctx.fillRect(i*20 + 10, 15 - h/2, 10, h); } requestAnimationFrame(drawVisualizer); }
+
 	function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-	function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); }
+	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+	function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); fetchRecentChats(); }
 	
 	lucide.createIcons();
 </script>
