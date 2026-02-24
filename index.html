@@ -39,6 +39,7 @@
 
 		input[type="text"], input[type="password"], input[type="email"], select, textarea { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); outline: none; margin-bottom: 15px; font-size: 16px; background: var(--card); color: var(--text); }
 		button.primary-btn { width: 100%; padding: 14px; background: var(--primary); color: white; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; font-size: 16px; }
+		button.action-btn { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: bold; cursor: pointer;}
 		
 		.fab { position: fixed; bottom: 85px; right: 20px; width: 56px; height: 56px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 100; }
 		nav { position: fixed; bottom: 0; width: 100%; height: 65px; background: var(--card); display: flex; border-top: 1px solid var(--border); z-index: 500; }
@@ -210,14 +211,84 @@
 		<span>Admin Console</span>
 		<div></div>
 	</div>
-	<div style="padding:15px;">
-		<h4 style="color:gray; margin-bottom:5px;">Manage Users</h4>
-		<div id="adminUserList" style="background:var(--card); border-radius:10px; overflow:hidden;"></div>
-		<h4 style="color:gray; margin-top:20px; margin-bottom:5px;">Manage Groups</h4>
-		<div id="adminRoomList" style="background:var(--card); border-radius:10px; overflow:hidden;"></div>
+	<div style="padding:15px; overflow-y:auto; flex:1;">
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+			<h4 style="color:gray; margin:0;">Manage Users</h4>
+			<button class="action-btn" onclick="openModal('adminAddUserModal')">+ Add User</button>
+		</div>
+		<div id="adminUserList" style="background:var(--card); border-radius:10px; overflow:hidden; margin-bottom:30px;"></div>
+
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+			<h4 style="color:gray; margin:0;">Manage Groups</h4>
+			<button class="action-btn" onclick="openModal('adminAddGroupModal')">+ Add Group</button>
+		</div>
+		<div id="adminRoomList" style="background:var(--card); border-radius:10px; overflow:hidden; margin-bottom:40px;"></div>
 	</div>
 </div>
 
+<div id="adminAddUserModal" class="modal" style="z-index: 2500;">
+	<div class="glass-header">
+		<button onclick="closeModal('adminAddUserModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>Add New User</span>
+		<button onclick="adminSaveNewUser()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Save</button>
+	</div>
+	<div style="padding:20px;">
+		<input type="text" id="addUserName" placeholder="Full Name">
+		<input type="email" id="addUserEmail" placeholder="Email Address">
+		<input type="password" id="addUserPass" placeholder="Password">
+		<input type="text" id="addUserPhone" placeholder="Phone Number">
+		<select id="addUserType">
+			<option value="User">Regular User</option>
+			<option value="Admin">Admin</option>
+		</select>
+	</div>
+</div>
+
+<div id="adminEditUserModal" class="modal" style="z-index: 2500;">
+	<div class="glass-header">
+		<button onclick="closeModal('adminEditUserModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>Edit User</span>
+		<button onclick="adminSaveEditUser()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Save</button>
+	</div>
+	<div style="padding:20px;">
+		<input type="hidden" id="editUserOldName">
+		<input type="text" id="editUserName" placeholder="Full Name">
+		<input type="email" id="editUserEmail" placeholder="Email Address">
+		<input type="password" id="editUserPass" placeholder="New Password (Optional)">
+		<input type="text" id="editUserPhone" placeholder="Phone Number">
+		<select id="editUserType">
+			<option value="User">Regular User</option>
+			<option value="Admin">Admin</option>
+		</select>
+	</div>
+</div>
+
+<div id="adminAddGroupModal" class="modal" style="z-index: 2500;">
+	<div class="glass-header">
+		<button onclick="closeModal('adminAddGroupModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>Add Group</span>
+		<button onclick="adminSaveNewGroup()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Create</button>
+	</div>
+	<div style="padding:20px;">
+		<input type="text" id="adminNewGroupName" placeholder="Group Name">
+		<p style="font-size:13px; color:gray; font-weight:bold;">SELECT MEMBERS</p>
+		<div id="adminGroupSelectionList" style="max-height: 50vh; overflow-y: auto; background:var(--card); border-radius:10px;"></div>
+	</div>
+</div>
+
+<div id="adminEditGroupModal" class="modal" style="z-index: 2500;">
+	<div class="glass-header">
+		<button onclick="closeModal('adminEditGroupModal')" style="background:none; border:none; color:var(--primary);">Cancel</button>
+		<span>Edit Group</span>
+		<button onclick="adminSaveEditGroup()" style="background:none; border:none; color:var(--primary); font-weight:bold;">Save</button>
+	</div>
+	<div style="padding:20px;">
+		<input type="hidden" id="editGroupOldName">
+		<input type="text" id="editGroupNewName" placeholder="Group Name">
+		<p style="font-size:13px; color:gray; font-weight:bold;">MANAGE MEMBERS</p>
+		<div id="adminEditGroupSelectionList" style="max-height: 50vh; overflow-y: auto; background:var(--card); border-radius:10px;"></div>
+	</div>
+</div>
 <div id="msgActionMenu" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:var(--card); border-top-left-radius:20px; border-top-right-radius:20px; z-index:4000; padding:20px; box-shadow:0 -5px 20px rgba(0,0,0,0.1);">
 	<button onclick="editSelectedMsg()" style="width:100%; padding:15px; font-size:16px; background:none; border:none; color:var(--text); border-bottom:1px solid var(--border);">Edit</button>
 	<button onclick="deleteSelectedMsg()" style="width:100%; padding:15px; font-size:16px; background:none; border:none; color:var(--danger); border-bottom:1px solid var(--border);">Delete for everyone</button>
@@ -230,20 +301,7 @@
 </nav>
 
 <script>
-	// --- PWA MANIFEST GENERATION ---
-	const rawIconURL = "https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png";
-	const manifestStr = JSON.stringify({
-		"name": "iMind Pro", "short_name": "iMind", "start_url": ".", "display": "standalone",
-		"background_color": "#ffffff", "theme_color": "#007AFF",
-		"icons": [{ "src": rawIconURL, "sizes": "512x512", "type": "image/png" }]
-	});
-	const blob = new Blob([manifestStr], {type: 'application/json'});
-	const head = document.querySelector('head');
-	head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(blob)}">`);
-	head.insertAdjacentHTML('beforeend', `<link rel="apple-touch-icon" href="${rawIconURL}">`);
-
-	// --- GLOBALS & CONFIG ---
-	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNIi5OXvcvmbmSTiQny5XHPNOBx3ZRkt6ksl0kIbzPsAUFA4hRjma8AW-2p1BH8-8x/exec'; 
+	const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7W2Wog8QfuYfGd4jPI-rPP-LUpRrckdR1A1pP20ZqXEysWfKfhPp-bHOTMRzNQ1rb/exec'; // DO NOT FORGET TO PASTE YOUR URL
 	let user = null, partner = null, isRoom = false, allContacts = [], allRooms = [], chatInterval;
 	let pendingMedia = "", selectedMsgId = null;
 
@@ -252,7 +310,7 @@
 		return await r.json();
 	}
 
-	// --- INITIALIZATION ---
+	// --- 1. LOGIN ---
 	async function handleLogin(btn) {
 		btn.innerText = "Connecting...";
 		const res = await api({ action: "login", identifier: document.getElementById('idInput').value, password: document.getElementById('passInput').value });
@@ -261,7 +319,10 @@
 			document.getElementById('loginScreen').classList.remove('active');
 			document.getElementById('navBar').style.display = 'flex';
 			
-			if(user.type === "Admin") document.getElementById('adminMenu').style.display = 'block';
+			// Critical Fix: check for "Admin" with trimming
+			if(user.type && user.type.trim() === "Admin") {
+				document.getElementById('adminMenu').style.display = 'block';
+			}
 			
 			if(user.bg) document.getElementById('chatBox').style.backgroundImage = `url(${user.bg})`;
 			if(user.theme) document.body.className = `theme-${user.theme}`;
@@ -280,7 +341,6 @@
 		const resC = await api({ action: "getProfiles" }); allContacts = resC.profiles || [];
 		const resR = await api({ action: "getRooms" }); allRooms = resR.rooms || [];
 		
-		// Populate New Chat Contact List
 		document.getElementById('newChatContactList').innerHTML = allContacts.filter(u => u.name !== user.name).map(p => `
 			<div class="list-item" onclick="closeModal('newChatModal'); startChat('${p.name}', false);">
 				<img src="${p.pfp || `https://ui-avatars.com/api/?name=${p.name}`}">
@@ -298,7 +358,7 @@
 		lucide.createIcons();
 	}
 
-	// --- RECENTS ---
+	// --- 2. RECENTS & GROUPS ---
 	async function fetchRecentChats() {
 		if(document.getElementById('dashScreen').classList.contains('active')) {
 			const res = await api({ action: "getRecentChats", me: user.name });
@@ -331,7 +391,6 @@
 		}
 	}
 
-	// --- GROUPS ---
 	function showGroupModal() {
 		const list = document.getElementById('groupSelectionList');
 		list.innerHTML = allContacts.filter(u => u.name !== user.name).map(u => `
@@ -351,13 +410,10 @@
 		if(!name || checked.length < 2) return alert("Enter name and select at least 1 person.");
 		
 		await api({ action: "addRoom", name: name, members: checked.join(',') });
-		closeModal('groupModal');
-		await loadData(); // refresh rooms
-		fetchRecentChats();
-		startChat(name, true);
+		closeModal('groupModal'); await loadData(); fetchRecentChats(); startChat(name, true);
 	}
 
-	// --- CHAT LOGIC ---
+	// --- 3. CHAT LOGIC ---
 	function startChat(name, isRm = false) {
 		partner = name; isRoom = isRm;
 		document.getElementById('chatHeader').innerText = name;
@@ -404,80 +460,128 @@
 		const text = overrideText || inp.value.trim();
 		if(!text && !pendingMedia) return;
 		await api({ action: "sendMessage", sender: user.name, receiver: partner, text: text, media: pendingMedia, isRoom: isRoom });
-		inp.value = ""; pendingMedia = ""; inp.placeholder = "Message";
-		loadMessages();
+		inp.value = ""; pendingMedia = ""; inp.placeholder = "Message"; loadMessages();
 	}
 
-	// --- MESSAGE ACTIONS ---
-	function openMsgMenu(e, id, sender) {
-		e.preventDefault();
-		if (sender !== user.name && user.type !== "Admin") return;
-		selectedMsgId = id; document.getElementById('msgActionMenu').style.display = 'block';
-	}
+	function openMsgMenu(e, id, sender) { e.preventDefault(); if (sender !== user.name && user.type.trim() !== "Admin") return; selectedMsgId = id; document.getElementById('msgActionMenu').style.display = 'block'; }
 	function closeMsgMenu() { document.getElementById('msgActionMenu').style.display = 'none'; selectedMsgId = null; }
 	async function editSelectedMsg() { closeMsgMenu(); const t = prompt("Edit message:"); if(t) { await api({ action: "editMessage", msgId: selectedMsgId, newText: t, receiver: partner, isRoom: isRoom }); loadMessages(); } }
 	async function deleteSelectedMsg() { closeMsgMenu(); if(confirm("Delete for everyone?")) { await api({ action: "deleteMessage", msgId: selectedMsgId, receiver: partner, isRoom: isRoom }); loadMessages(); } }
 
-	// --- PARTNER / GROUP PROFILES ---
-	function viewPartnerProfile() {
-		const overlay = document.createElement('div');
-		overlay.className = "modal"; overlay.style.display = "flex"; overlay.style.background = "var(--bg)";
+	// --- 4. ADMIN CONSOLE & OPERATIONS ---
+	async function openAdminConsole() {
+		const userList = document.getElementById('adminUserList');
+		const roomList = document.getElementById('adminRoomList');
 		
-		if(isRoom) {
-			const rm = allRooms.find(x => x.name === partner) || {name: partner, description: "No description", rules: "No rules", members: ""};
-			const pfp = rm.icon || `https://ui-avatars.com/api/?name=${partner}&background=random`;
+		userList.innerHTML = allContacts.map(c => `
+			<div class="settings-item">
+				<div><b style="font-size:15px;">${c.name}</b><br><small style="color:gray;">${c.type || 'User'}</small></div>
+				<div>
+					<i data-lucide="edit" style="color:var(--primary); margin-right:15px; cursor:pointer;" onclick="adminOpenEditUser('${c.name}', '${c.email}', '${c.phone}', '${c.type}')"></i>
+					<i data-lucide="trash" style="color:var(--danger); cursor:pointer;" onclick="adminDeleteUser('${c.name}')"></i>
+				</div>
+			</div>`).join('');
 			
-			overlay.innerHTML = `
-				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Group Info</span><div></div></div>
-				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);">
-					<img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-					<h2 style="margin:0;">${partner}</h2>
-					<p style="color:gray;">Group • ${rm.members.split(',').length} participants</p>
+		roomList.innerHTML = allRooms.map(r => `
+			<div class="settings-item">
+				<div><b style="font-size:15px;">${r.name}</b><br><small style="color:gray;">${r.members.split(',').length} members</small></div>
+				<div>
+					<i data-lucide="edit" style="color:var(--primary); margin-right:15px; cursor:pointer;" onclick="adminOpenEditRoom('${r.name}', '${r.members}')"></i>
+					<i data-lucide="trash" style="color:var(--danger); cursor:pointer;" onclick="adminDeleteRoom('${r.name}')"></i>
 				</div>
-				<div class="settings-group" style="padding:15px 20px;">
-					<b style="color:var(--primary); font-size:14px;">Description</b>
-					<p style="margin:5px 0;">${rm.description}</p>
-				</div>
-				<div class="settings-group" style="padding:15px 20px;">
-					<b style="color:var(--primary); font-size:14px;">Rules</b>
-					<p style="margin:5px 0;">${rm.rules}</p>
-				</div>
-				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Join Call</span></div></div>
-				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
-			`;
-		} else {
-			const contact = allContacts.find(c => c.name === partner) || { name: partner, status: "Available", phone: "" };
-			const pfp = contact.pfp || `https://ui-avatars.com/api/?name=${partner}`;
-			overlay.innerHTML = `
-				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Contact Info</span><div></div></div>
-				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);">
-					<img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-					<h2 style="margin:0;">${partner}</h2><p style="color:gray;">${contact.phone}</p>
-				</div>
-				<div class="settings-group" style="padding:15px 20px;">
-					<b style="color:var(--primary); font-size:14px;">About</b>
-					<p style="margin:5px 0;">${contact.status}</p>
-				</div>
-				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Audio/Video Call</span></div></div>
-				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
-			`;
-		}
-		document.body.appendChild(overlay); lucide.createIcons();
+			</div>`).join('');
+		
+		lucide.createIcons(); openModal('adminModal');
+	}
+	
+	// Admin Users
+	async function adminSaveNewUser() {
+		const n = document.getElementById('addUserName').value; const e = document.getElementById('addUserEmail').value;
+		const p = document.getElementById('addUserPass').value; const ph = document.getElementById('addUserPhone').value;
+		const t = document.getElementById('addUserType').value;
+		if(!n || !e || !p) return alert("Name, Email, and Password required.");
+		
+		await api({ action: "addUser", name: n, email: e, password: p, phone: ph, type: t });
+		closeModal('adminAddUserModal'); alert("User Added"); await loadData(); openAdminConsole();
 	}
 
-	async function clearCurrentChat() {
-		if(confirm("Erase all messages in this conversation permanently?")) {
-			await api({ action: "clearChat", me: user.name, partner: partner, isRoom: isRoom });
-			alert("Chat cleared."); document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'chatScreen') m.remove(); }); loadMessages();
-		}
+	function adminOpenEditUser(name, email, phone, type) {
+		document.getElementById('editUserOldName').value = name;
+		document.getElementById('editUserName').value = name;
+		document.getElementById('editUserEmail').value = email;
+		document.getElementById('editUserPhone').value = phone;
+		document.getElementById('editUserType').value = type || "User";
+		document.getElementById('editUserPass').value = ""; // Don't show old pass
+		openModal('adminEditUserModal');
 	}
 
-	// --- PROFILE & SETTINGS FIXES ---
+	async function adminSaveEditUser() {
+		const old = document.getElementById('editUserOldName').value;
+		const n = document.getElementById('editUserName').value; const e = document.getElementById('editUserEmail').value;
+		const p = document.getElementById('editUserPass').value; const ph = document.getElementById('editUserPhone').value;
+		const t = document.getElementById('editUserType').value;
+		
+		await api({ action: "adminEditUser", oldName: old, name: n, email: e, password: p, phone: ph, type: t });
+		closeModal('adminEditUserModal'); alert("User Updated"); await loadData(); openAdminConsole();
+	}
+
+	async function adminDeleteUser(name) { if(confirm(`Delete user ${name}?`)) { await api({action: "deleteUser", name: name}); await loadData(); openAdminConsole(); } }
+	
+	// Admin Groups
+	function openAdminAddGroupModal() {
+		const list = document.getElementById('adminGroupSelectionList');
+		list.innerHTML = allContacts.map(u => `
+			<div class="list-item" style="padding:10px 15px;">
+				<input type="checkbox" class="admin-new-group-checkbox" value="${u.name}" style="width:20px; height:20px; margin-right:15px;">
+				<b>${u.name}</b>
+			</div>
+		`).join('');
+		openModal('adminAddGroupModal');
+	}
+
+	async function adminSaveNewGroup() {
+		const name = document.getElementById('adminNewGroupName').value;
+		const checked = Array.from(document.querySelectorAll('.admin-new-group-checkbox:checked')).map(c => c.value);
+		if(!name || checked.length < 1) return alert("Enter name and select members.");
+		
+		await api({ action: "addRoom", name: name, members: checked.join(',') });
+		closeModal('adminAddGroupModal'); await loadData(); openAdminConsole();
+	}
+
+	function adminOpenEditRoom(name, members) {
+		document.getElementById('editGroupOldName').value = name;
+		document.getElementById('editGroupNewName').value = name;
+		const memberArray = members.split(',');
+		
+		const list = document.getElementById('adminEditGroupSelectionList');
+		list.innerHTML = allContacts.map(u => {
+			const isChecked = memberArray.includes(u.name) ? "checked" : "";
+			return `
+			<div class="list-item" style="padding:10px 15px;">
+				<input type="checkbox" class="admin-edit-group-checkbox" value="${u.name}" ${isChecked} style="width:20px; height:20px; margin-right:15px;">
+				<b>${u.name}</b>
+			</div>`;
+		}).join('');
+		openModal('adminEditGroupModal');
+	}
+
+	async function adminSaveEditGroup() {
+		const old = document.getElementById('editGroupOldName').value;
+		const name = document.getElementById('editGroupNewName').value;
+		const checked = Array.from(document.querySelectorAll('.admin-edit-group-checkbox:checked')).map(c => c.value);
+		if(!name || checked.length < 1) return alert("Enter name and select members.");
+		
+		await api({ action: "adminEditRoom", oldName: old, newName: name, members: checked.join(',') });
+		closeModal('adminEditGroupModal'); alert("Group Updated"); await loadData(); openAdminConsole();
+	}
+
+	async function adminDeleteRoom(name) { if(confirm(`Delete group ${name}?`)) { await api({action: "deleteRoom", name: name}); await loadData(); openAdminConsole(); } }
+
+	// --- 5. MY PROFILE & THEMES ---
 	function setupProfileUI() {
 		document.getElementById('myNameDisplay').innerText = user.name;
 		document.getElementById('myStatusDisplay').innerText = user.status;
 		document.getElementById('myPfpDisplay').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
-		
 		document.getElementById('editName').value = user.name;
 		document.getElementById('editStatus').value = user.status;
 		document.getElementById('editPhone').value = user.phone;
@@ -485,28 +589,20 @@
 	}
 
 	async function saveProfileChanges() {
-		const name = document.getElementById('editName').value;
-		const stat = document.getElementById('editStatus').value;
-		const ph = document.getElementById('editPhone').value;
-		
+		const name = document.getElementById('editName').value; const stat = document.getElementById('editStatus').value; const ph = document.getElementById('editPhone').value;
 		const res = await api({ action: "updateProfile", oldEmail: user.email, name: name, status: stat, phone: ph, pfp: user.pfp });
-		if(res.status === "success") {
-			user = res.user; setupProfileUI(); closeModal('editProfileModal'); alert("Profile updated!");
-		}
+		if(res.status === "success") { user = res.user; setupProfileUI(); closeModal('editProfileModal'); alert("Profile updated!"); }
 	}
 
 	function uploadFile(input, type) {
-		if (!input.files[0]) return;
-		const reader = new FileReader();
+		if (!input.files[0]) return; const reader = new FileReader();
 		reader.onload = (e) => {
 			const img = new Image(); img.src = e.target.result;
 			img.onload = () => {
-				const canvas = document.createElement('canvas');
-				const scale = (type==='pfp'?200:600) / img.width; 
+				const canvas = document.createElement('canvas'); const scale = (type==='pfp'?200:600) / img.width; 
 				canvas.width = (type==='pfp'?200:600); canvas.height = img.height * scale;
 				const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 				const b64 = canvas.toDataURL('image/jpeg', 0.6);
-				
 				if(type === 'pfp') { user.pfp = b64; document.getElementById('editPfpPreview').src = b64; }
 				if(type === 'bg') { user.bg = b64; document.getElementById('chatBox').style.backgroundImage = `url(${b64})`; api({ action: "updateProfile", oldEmail: user.email, bg: b64 }); }
 			};
@@ -515,27 +611,38 @@
 	}
 	
 	function clearBg() { user.bg = ""; document.getElementById('chatBox').style.backgroundImage = "none"; api({ action: "updateProfile", oldEmail: user.email, bg: "" }); }
-	
-	function setTheme(t) {
-		document.body.className = `theme-${t}`;
-		api({ action: "updateProfile", oldEmail: user.email, theme: t });
+	function setTheme(t) { document.body.className = `theme-${t}`; api({ action: "updateProfile", oldEmail: user.email, theme: t }); }
+
+	function viewPartnerProfile() {
+		const overlay = document.createElement('div'); overlay.className = "modal"; overlay.style.display = "flex"; overlay.style.background = "var(--bg)";
+		if(isRoom) {
+			const rm = allRooms.find(x => x.name === partner) || {name: partner, description: "No description", rules: "No rules", members: ""};
+			const pfp = rm.icon || `https://ui-avatars.com/api/?name=${partner}&background=random`;
+			overlay.innerHTML = `
+				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Group Info</span><div></div></div>
+				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);"><img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;"><h2 style="margin:0;">${partner}</h2><p style="color:gray;">Group • ${rm.members.split(',').length} participants</p></div>
+				<div class="settings-group" style="padding:15px 20px;"><b style="color:var(--primary); font-size:14px;">Description</b><p style="margin:5px 0;">${rm.description}</p></div>
+				<div class="settings-group" style="padding:15px 20px;"><b style="color:var(--primary); font-size:14px;">Rules</b><p style="margin:5px 0;">${rm.rules}</p></div>
+				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Join Call</span></div></div>
+				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
+			`;
+		} else {
+			const contact = allContacts.find(c => c.name === partner) || { name: partner, status: "Available", phone: "" };
+			const pfp = contact.pfp || `https://ui-avatars.com/api/?name=${partner}`;
+			overlay.innerHTML = `
+				<div class="glass-header"><button onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:var(--primary);">Back</button><span>Contact Info</span><div></div></div>
+				<div style="text-align:center; padding:30px 20px; background:var(--card); border-bottom:1px solid var(--border);"><img src="${pfp}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;"><h2 style="margin:0;">${partner}</h2><p style="color:gray;">${contact.phone}</p></div>
+				<div class="settings-group" style="padding:15px 20px;"><b style="color:var(--primary); font-size:14px;">About</b><p style="margin:5px 0;">${contact.status}</p></div>
+				<div class="settings-group"><div class="settings-item" onclick="document.getElementById('callBtn').click()"><span style="color:var(--primary); font-weight:bold;"><i data-lucide="phone"></i> Audio/Video Call</span></div></div>
+				<div class="settings-group"><div class="settings-item" onclick="clearCurrentChat()"><span style="color:var(--danger); font-weight:bold;"><i data-lucide="trash-2"></i> Clear Chat History</span></div></div>
+			`;
+		}
+		document.body.appendChild(overlay); lucide.createIcons();
 	}
 
-	// --- ADMIN PANEL FIXES ---
-	async function openAdminConsole() {
-		const userList = document.getElementById('adminUserList');
-		const roomList = document.getElementById('adminRoomList');
-		
-		userList.innerHTML = allContacts.map(c => `<div class="settings-item"><span>${c.name}</span> <i data-lucide="trash" style="color:var(--danger);" onclick="adminDeleteUser('${c.name}')"></i></div>`).join('');
-		roomList.innerHTML = allRooms.map(r => `<div class="settings-item"><span>${r.name}</span> <i data-lucide="trash" style="color:var(--danger);" onclick="adminDeleteRoom('${r.name}')"></i></div>`).join('');
-		
-		lucide.createIcons(); openModal('adminModal');
-	}
-	
-	async function adminDeleteUser(name) { if(confirm(`Delete user ${name}?`)) { await api({action: "deleteUser", name: name}); loadData(); openAdminConsole(); } }
-	async function adminDeleteRoom(name) { if(confirm(`Delete group ${name}?`)) { await api({action: "deleteRoom", name: name}); loadData(); openAdminConsole(); } }
+	async function clearCurrentChat() { if(confirm("Erase all messages in this conversation permanently?")) { await api({ action: "clearChat", me: user.name, partner: partner, isRoom: isRoom }); alert("Chat cleared."); document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'chatScreen') m.remove(); }); loadMessages(); } }
 
-	// --- MEDIA & RECORDER ---
+	// --- 6. MEDIA & UTILS ---
 	function attachMedia(input) {
 		if (!input.files[0]) return; const reader = new FileReader();
 		reader.onload = (e) => { 
@@ -561,7 +668,10 @@
 	function stopRecording() { if(mediaRecorder && mediaRecorder.state === "recording") { mediaRecorder.stop(); document.getElementById('chatControls').classList.remove('recording-active'); } }
 	function drawVisualizer() { const canvas = document.getElementById("visualizer"); const ctx = canvas.getContext("2d"); if(!document.getElementById('chatControls').classList.contains('recording-active')) { ctx.clearRect(0,0,canvas.width,canvas.height); return; } ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "var(--primary)"; for(let i=0; i<5; i++) { let h = Math.random() * 20 + 5; ctx.fillRect(i*20 + 10, 15 - h/2, 10, h); } requestAnimationFrame(drawVisualizer); }
 
-	function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+	function openModal(id) { 
+		if (id === 'adminAddGroupModal') openAdminAddGroupModal(); // override logic
+		document.getElementById(id).style.display = 'flex'; 
+	}
 	function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 	function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); fetchRecentChats(); }
 	
