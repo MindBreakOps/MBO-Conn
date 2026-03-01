@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>iMind Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --ios-bg: #ffffff;
+        --ios-card: #ffffff;
+        --ios-text: #000000;
+        --ios-subtext: #8E8E93;
+        --ios-blue: #007AFF;
+        --ios-green: #34C759;
+        --ios-border: #C6C6C8;
+        --ios-chat-in: #ffffff;
+        --ios-chat-out: #E9E9EB;
+        --tg-chat-out: #E7FFDB;
+        --tg-chat-in: #FFFFFF;
+        --tg-header-bg: #007AFF;
+        --tg-bg: #F5F5F7;
+      }
+
+      body.theme-dark {
+        --ios-bg: #000000;
+        --ios-card: #1C1C1E;
+        --ios-text: #FFFFFF;
+        --ios-subtext: #8E8E93;
+        --ios-blue: #0A84FF;
+        --ios-border: #38383A;
+        --tg-chat-out: #005c4b;
+        --tg-chat-in: #202C33;
+        --tg-header-bg: #1C1C1E;
+        --tg-bg: #0B141A;
+      }
+
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+      body, html { height: 100%; margin: 0; overflow: hidden; background: var(--tg-bg); color: var(--ios-text); transition: background 0.3s; }
+      #root { height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
