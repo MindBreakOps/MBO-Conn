@@ -1,51 +1,926 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>iMind Pro</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --ios-bg: #ffffff;
-        --ios-card: #ffffff;
-        --ios-text: #000000;
-        --ios-subtext: #8E8E93;
-        --ios-blue: #007AFF;
-        --ios-green: #34C759;
-        --ios-border: #C6C6C8;
-        --ios-chat-in: #ffffff;
-        --ios-chat-out: #E9E9EB;
-        --tg-chat-out: #E7FFDB;
-        --tg-chat-in: #FFFFFF;
-        --tg-header-bg: #007AFF;
-        --tg-bg: #F5F5F7;
-      }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<title>iMind</title>
+	<script src="https://unpkg.com/lucide@latest"></script>
+	<style>
+		:root {
+			--ios-bg: #ffffff;
+			--ios-card: #ffffff;
+			--ios-text: #000000;
+			--ios-subtext: #8E8E93;
+			--ios-blue: #007AFF;
+			--ios-green: #34C759;
+			--ios-border: #C6C6C8;
+			--ios-chat-in: #ffffff;
+			--ios-chat-out: #E9E9EB; /* iOS default bubble out (needs to be green for Telegram style, but we stick to Telegram green below) */
+			--tg-chat-out: #E7FFDB; /* Telegram Green */
+			--tg-chat-in: #FFFFFF;
+			--tg-header-bg: #007AFF;
+			--tg-bg: #F5F5F7; /* Slightly off-white */
+		}
 
-      body.theme-dark {
-        --ios-bg: #000000;
-        --ios-card: #1C1C1E;
-        --ios-text: #FFFFFF;
-        --ios-subtext: #8E8E93;
-        --ios-blue: #0A84FF;
-        --ios-border: #38383A;
-        --tg-chat-out: #005c4b;
-        --tg-chat-in: #202C33;
-        --tg-header-bg: #1C1C1E;
-        --tg-bg: #0B141A;
-      }
+		body.theme-dark {
+			--ios-bg: #000000;
+			--ios-card: #1C1C1E;
+			--ios-text: #FFFFFF;
+			--ios-subtext: #8E8E93;
+			--ios-blue: #0A84FF;
+			--ios-border: #38383A;
+			--tg-chat-out: #005c4b; /* Telegram Dark Green */
+			--tg-chat-in: #202C33; /* Telegram Dark In */
+			--tg-header-bg: #1C1C1E;
+			--tg-bg: #0B141A; /* Telegram Dark BG */
+		}
 
-      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
-      body, html { height: 100%; margin: 0; overflow: hidden; background: var(--tg-bg); color: var(--ios-text); transition: background 0.3s; }
-      #root { height: 100%; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+		* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+		body, html { height: 100%; margin: 0; overflow: hidden; background: var(--tg-bg); color: var(--ios-text); transition: background 0.3s; }
+
+		/* Screens & Navigation */
+		.screen { display: none; height: 100vh; flex-direction: column; width: 100%; position: absolute; top: 0; left: 0; background: var(--tg-bg); }
+		.screen.active { display: flex; animation: slideIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 10; }
+		@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+		/* Header (iOS Style) */
+		.ios-header {
+			padding: 12px 16px;
+			background: var(--tg-header-bg);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-weight: 600;
+			font-size: 21px;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			height: 60px;
+		}
+		.ios-header .left-btn { background: none; border: none; color: white; padding: 0; display: flex; align-items: center; font-size: 16px; font-weight: 500; }
+		.ios-header .right-btn { background: none; border: none; color: white; padding: 0; font-weight: 500; font-size: 16px; }
+		
+		/* Chat List Items */
+		.chat-list-item {
+			display: flex;
+			align-items: center;
+			padding: 12px 16px;
+			background: var(--ios-card);
+			border-bottom: 0.5px solid var(--ios-border);
+			cursor: pointer;
+			transition: background 0.1s;
+		}
+		.chat-list-item:active { background: #f2f2f7; }
+		.chat-list-item img {
+			width: 58px;
+			height: 58px;
+			border-radius: 50%;
+			margin-right: 14px;
+			object-fit: cover;
+			background: #e5e5ea;
+		}
+		.chat-info { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+		.chat-name-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+		.chat-name { font-size: 17px; font-weight: 600; color: var(--ios-text); }
+		.chat-time { font-size: 12px; color: var(--ios-subtext); font-weight: 400; }
+		.chat-preview { font-size: 15px; color: var(--ios-subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+		/* Chat Screen */
+		#chatBox {
+			flex: 1;
+			overflow-y: auto;
+			padding: 12px 12px 80px 12px; /* Padding bottom for input */
+			display: flex;
+			flex-direction: column;
+			background: var(--tg-bg);
+			background-size: cover;
+			background-position: center;
+		}
+
+		/* Messages - Telegram Style */
+		.msg {
+			max-width: 75%;
+			padding: 8px 12px;
+			margin-bottom: 4px;
+			font-size: 16px;
+			line-height: 1.35;
+			word-wrap: break-word;
+			position: relative;
+			display: flex;
+			flex-direction: column;
+		}
+		.sent {
+			background: var(--tg-chat-out);
+			color: var(--ios-text);
+			align-self: flex-end;
+			border-top-right-radius: 8px;
+			border-bottom-right-radius: 8px;
+			border-top-left-radius: 8px;
+		}
+		.received {
+			background: var(--tg-chat-in);
+			color: var(--ios-text);
+			align-self: flex-start;
+			border-top-right-radius: 8px;
+			border-bottom-right-radius: 8px;
+			border-top-left-radius: 8px;
+		}
+		.msg-content { margin-bottom: 2px; }
+		.msg-meta {
+			align-self: flex-end;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 11px;
+			color: var(--ios-subtext);
+			margin-top: 2px;
+			font-weight: 500;
+		}
+		.msg img.media { max-width: 100%; border-radius: 8px; margin-top: 6px; }
+		
+		/* Chat Input Area - Telegram Style */
+		.chat-input-area {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 8px 12px 16px 12px;
+			background: var(--tg-bg); /* Matches bg to blend */
+			display: flex;
+			align-items: flex-end;
+			gap: 8px;
+			z-index: 50;
+			border-top: 1px solid rgba(0,0,0,0.05);
+		}
+		.input-wrapper {
+			flex: 1;
+			background: var(--ios-card);
+			border-radius: 20px;
+			padding: 8px 12px;
+			display: flex;
+			align-items: center;
+			border: 1px solid var(--ios-border);
+		}
+		.chat-input {
+			width: 100%;
+			border: none;
+			outline: none;
+			background: transparent;
+			font-size: 16px;
+			color: var(--ios-text);
+			margin: 0;
+			padding: 0;
+			resize: none;
+			max-height: 100px;
+			font-family: inherit;
+		}
+		.input-action-btn {
+			width: 36px;
+			height: 36px;
+			border-radius: 50%;
+			border: none;
+			background: var(--ios-blue);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+			box-shadow: 0 2px 5px rgba(0,122,255,0.4);
+		}
+		.input-action-btn.secondary {
+			background: transparent;
+			box-shadow: none;
+			color: var(--ios-subtext);
+		}
+
+		/* Bottom Tab Bar */
+		.ios-nav {
+			position: fixed;
+			bottom: 0;
+			width: 100%;
+			height: 50px;
+			background: var(--ios-card);
+			display: flex;
+			border-top: 0.5px solid var(--ios-border);
+			z-index: 100;
+			padding-bottom: env(safe-area-inset-bottom);
+		}
+		.nav-tab {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			font-size: 10px;
+			color: var(--ios-subtext);
+			cursor: pointer;
+			gap: 2px;
+		}
+		.nav-tab.active { color: var(--ios-blue); }
+		.nav-tab svg { width: 22px; height: 22px; }
+
+		/* FAB (Floating Action Button) */
+		.fab {
+			position: fixed;
+			bottom: 75px; /* Above nav bar */
+			right: 16px;
+			width: 56px;
+			height: 56px;
+			background: var(--ios-blue);
+			border-radius: 50%;
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 12px rgba(0,122,255,0.4);
+			cursor: pointer;
+			z-index: 90;
+			transition: transform 0.2s;
+		}
+		.fab:active { transform: scale(0.95); }
+
+		/* Modals */
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: var(--ios-bg);
+			z-index: 2000;
+			flex-direction: column;
+			animation: modalSlide 0.3s ease;
+		}
+		@keyframes modalSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+		/* Inputs & Buttons */
+		input[type="text"], input[type="password"], input[type="email"], select, textarea {
+			width: 100%;
+			padding: 12px;
+			border-radius: 10px;
+			border: 1px solid var(--ios-border);
+			outline: none;
+			margin-bottom: 15px;
+			font-size: 16px;
+			background: var(--ios-card);
+			color: var(--ios-text);
+			transition: border 0.2s;
+		}
+		input:focus { border-color: var(--ios-blue); }
+		
+		button.primary-btn {
+			width: 100%;
+			padding: 14px;
+			background: var(--ios-blue);
+			color: white;
+			font-weight: 600;
+			border: none;
+			border-radius: 12px;
+			cursor: pointer;
+			font-size: 16px;
+			margin-top: 10px;
+		}
+
+		/* Settings List */
+		.settings-group { background: var(--ios-card); margin-top: 20px; border-top: 1px solid var(--ios-border); border-bottom: 1px solid var(--ios-border); }
+		.settings-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--ios-border); cursor: pointer; min-height: 48px; }
+		.settings-item:last-child { border-bottom: none; }
+		.settings-item span { font-size: 16px; }
+		.settings-icon { margin-right: 12px; color: var(--ios-blue); }
+
+		/* Login Screen */
+		.login-container { width: 100%; max-width: 320px; margin: 0 auto; text-align: center; padding-top: 60px; }
+		.login-logo { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 20px; object-fit: cover; }
+		.login-title { font-size: 28px; font-weight: 700; margin-bottom: 30px; color: var(--ios-text); }
+
+		/* Utilities */
+		.hidden { display: none !important; }
+		.text-center { text-align: center; }
+		.muted { color: var(--ios-subtext); font-size: 13px; }
+		
+		/* Visualizer */
+		#visualizer { display: none; width: 60px; height: 30px; background: transparent; }
+		.recording-active #visualizer { display: block; }
+		.recording-active .chat-input { display: none; }
+
+		/* Dark Mode Invert Fix */
+		.dark-invert { filter: invert(0); }
+		body.theme-dark .dark-invert { filter: invert(1); }
+	</style>
+</head>
+<body>
+
+	<!-- LOGIN SCREEN -->
+	<div id="loginScreen" class="screen active">
+		<div class="login-container">
+			<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" alt="Logo" class="login-logo dark-invert" onerror="this.src='https://via.placeholder.com/100'">
+			<div class="login-title">iMind Pro</div>
+			<input type="text" id="idInput" placeholder="Email or Phone" style="margin-bottom: 12px;">
+			<input type="password" id="passInput" placeholder="Password" style="margin-bottom: 12px;">
+			<button class="primary-btn" onclick="handleLogin(this)">Continue</button>
+		</div>
+	</div>
+
+	<!-- DASHBOARD (CHATS LIST) -->
+	<div id="dashScreen" class="screen">
+		<div class="ios-header">
+			<span>Edit</span>
+			<span>iMind</span>
+			<button class="ios-header-btn" onclick="openModal('newChatModal')"><i data-lucide="square-plus" style="stroke: white;"></i></button>
+		</div>
+		<div style="padding: 8px 16px; background: var(--tg-bg);">
+			<input type="text" id="contactSearch" placeholder="Search" oninput="filterContacts()" style="margin:0; border-radius: 10px; background: var(--ios-card); border: 1px solid var(--ios-border); padding: 10px;">
+		</div>
+		<div id="recentChatsList" style="flex:1; overflow-y:auto; background: var(--ios-card);">
+			<div style="text-align:center; margin-top:50px; color:var(--ios-subtext);">Loading chats...</div>
+		</div>
+	</div>
+
+	<!-- SETTINGS SCREEN -->
+	<div id="settingsScreen" class="screen">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<span>Settings</span>
+		</div>
+		<div class="settings-group" style="margin-top: 0;">
+			<div class="settings-item" onclick="openModal('editProfileModal')">
+				<img id="myPfpDisplay" src="" style="width: 54px; height: 54px; border-radius: 50%; margin-right: 12px; object-fit: cover;">
+				<div style="flex:1;">
+					<b id="myNameDisplay" style="font-size: 18px;">Name</b><br>
+					<small id="myStatusDisplay" class="muted">Status</small>
+				</div>
+				<i data-lucide="chevron-right" style="color: var(--ios-subtext);"></i>
+			</div>
+		</div>
+		<div class="settings-group">
+			<div class="settings-item" onclick="openModal('themeModal')">
+				<div class="settings-icon"><i data-lucide="palette"></i></div>
+				<span>Appearance</span>
+			</div>
+			<div class="settings-item admin-only hidden" id="adminMenu" onclick="openAdminConsole()">
+				<div class="settings-icon" style="color: var(--ios-blue);"><i data-lucide="shield"></i></div>
+				<span>Admin Console</span>
+			</div>
+		</div>
+		<div class="settings-group">
+			<div class="settings-item" onclick="location.reload()" style="justify-content: center; color: #FF3B30;">
+				<span>Log Out</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- CHAT SCREEN -->
+	<div id="chatScreen" class="modal" style="animation: none; background: var(--tg-bg);">
+		<div class="ios-header" style="background: var(--tg-header-bg);">
+			<button onclick="closeChat()" class="left-btn"><i data-lucide="chevron-left" style="width: 24px; height: 24px;"></i> Chats</button>
+			<div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="viewPartnerProfile()">
+				<span id="chatHeader" style="font-size: 17px;">Name</span>
+				<img id="chatHeaderPfp" src="" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ddd;">
+			</div>
+			<button id="callBtn" class="ios-header-btn hidden" onclick="window.open('https://meet.jit.si/iMind', '_blank')"><i data-lucide="phone" style="stroke: white;"></i></button>
+		</div>
+		
+		<div id="chatBox"></div>
+
+		<div class="chat-input-area">
+			<button class="input-action-btn secondary" onclick="document.getElementById('mediaUpload').click()">
+				<i data-lucide="plus" style="width: 20px;"></i>
+			</button>
+			<input type="file" id="mediaUpload" style="display:none;" onchange="attachMedia(this)">
+			
+			<div class="input-wrapper">
+				<textarea id="chatInput" class="chat-input" placeholder="Message" rows="1" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMsg(); }"></textarea>
+				<canvas id="visualizer"></canvas>
+			</div>
+
+			<button class="input-action-btn secondary" id="recordBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">
+				<i data-lucide="mic" style="width: 20px;"></i>
+			</button>
+			
+			<button class="input-action-btn" onclick="sendMsg()">
+				<i data-lucide="send" style="width: 18px; margin-left: 2px;"></i>
+			</button>
+		</div>
+	</div>
+
+	<!-- NEW CHAT MODAL -->
+	<div id="newChatModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('newChatModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
+			<span>New Chat</span>
+			<div style="width: 60px;"></div>
+		</div>
+		<div class="chat-list-item" onclick="closeModal('newChatModal'); showGroupModal();">
+			<div style="width: 58px; height: 58px; border-radius: 50%; background: #34C759; color: white; display: flex; align-items: center; justify-content: center; margin-right: 14px;"><i data-lucide="users"></i></div>
+			<div class="chat-info"><div class="chat-name">New Group</div></div>
+		</div>
+		<div style="padding: 10px 16px; color: var(--ios-subtext); font-size: 13px; font-weight: 600;">CONTACTS</div>
+		<div id="newChatContactList" style="flex:1; overflow-y:auto;"></div>
+	</div>
+
+	<!-- GROUP MODAL -->
+	<div id="groupModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('groupModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
+			<span>New Group</span>
+			<button onclick="createGroupFinal()" class="ios-header-btn" style="color: var(--ios-blue);">Create</button>
+		</div>
+		<div style="padding:20px;">
+			<input type="text" id="newGroupName" placeholder="Group Subject">
+			<p style="font-size:13px; color:var(--ios-subtext); margin-bottom:10px;">SELECT MEMBERS</p>
+		</div>
+		<div id="groupSelectionList" style="flex:1; overflow-y:auto; padding:0 20px;"></div>
+	</div>
+
+	<!-- EDIT PROFILE MODAL -->
+	<div id="editProfileModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('editProfileModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
+			<span>Edit Profile</span>
+			<button onclick="saveProfileChanges()" class="ios-header-btn" style="color: var(--ios-blue);">Save</button>
+		</div>
+		<div style="padding:30px; text-align:center;">
+			<img id="editPfpPreview" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:10px; border: 2px solid var(--ios-border);">
+			<label style="display:block; color:var(--ios-blue); font-weight:500; cursor:pointer; margin-bottom:20px;">Change Photo<input type="file" style="display:none;" onchange="uploadFile(this, 'pfp')"></label>
+			<input type="text" id="editName" placeholder="Name">
+			<input type="text" id="editStatus" placeholder="About / Status">
+			<input type="text" id="editPhone" placeholder="Phone Number">
+		</div>
+	</div>
+
+	<!-- THEME MODAL -->
+	<div id="themeModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('themeModal')" class="ios-header-btn" style="color: var(--ios-blue);">Back</button>
+			<span>Appearance</span>
+			<div style="width: 60px;"></div>
+		</div>
+		<div class="settings-group">
+			<div class="settings-item" onclick="setTheme('light')"><span>Light</span></div>
+			<div class="settings-item" onclick="setTheme('dark')"><span>Dark</span></div>
+		</div>
+		<div style="padding:20px;">
+			<p class="muted">Chat Background</p>
+			<label class="primary-btn" style="display:inline-block; cursor:pointer; width:auto; padding:10px 20px; background: var(--ios-card); color: var(--ios-text); border: 1px solid var(--ios-border);">Choose Image<input type="file" style="display:none;" onchange="uploadFile(this, 'bg')"></label>
+			<br><br><button onclick="clearBg()" style="background:none; border:none; color:var(--ios-blue); font-weight:500;">Reset Background</button>
+		</div>
+	</div>
+
+	<!-- ADMIN MODAL (Simplified) -->
+	<div id="adminModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('adminModal')" class="ios-header-btn" style="color: var(--ios-blue);">Back</button>
+			<span>Admin</span>
+			<div style="width: 60px;"></div>
+		</div>
+		<div style="padding: 15px; overflow-y:auto; flex:1;">
+			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+				<h4 style="margin:0;">Users</h4>
+				<button class="primary-btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="openModal('adminAddUserModal')">+ Add</button>
+			</div>
+			<div id="adminUserList" style="background:var(--ios-card); border-radius:12px; overflow:hidden; margin-bottom:20px; border: 1px solid var(--ios-border);"></div>
+			
+			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+				<h4 style="margin:0;">Groups</h4>
+				<button class="primary-btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="openModal('adminAddGroupModal')">+ Add</button>
+			</div>
+			<div id="adminRoomList" style="background:var(--ios-card); border-radius:12px; overflow:hidden; border: 1px solid var(--ios-border);"></div>
+		</div>
+	</div>
+
+	<!-- ADMIN USER MODAL -->
+	<div id="adminAddUserModal" class="modal">
+		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
+			<button onclick="closeModal('adminAddUserModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
+			<span>Add User</span>
+			<button onclick="adminSaveNewUser()" class="ios-header-btn" style="color: var(--ios-blue);">Save</button>
+		</div>
+		<div style="padding:20px;">
+			<input type="text" id="addUserName" placeholder="Full Name">
+			<input type="email" id="addUserEmail" placeholder="Email">
+			<input type="password" id="addUserPass" placeholder="Password">
+			<input type="text" id="addUserPhone" placeholder="Phone">
+			<select id="addUserType"><option value="User">User</option><option value="Admin">Admin</option></select>
+		</div>
+	</div>
+
+	<!-- NAV BAR -->
+	<div id="navBar" class="ios-nav hidden">
+		<div class="nav-tab active" onclick="switchTab('dashScreen', this)">
+			<i data-lucide="message-circle"></i>
+			Chats
+		</div>
+		<div class="nav-tab" onclick="switchTab('settingsScreen', this)">
+			<i data-lucide="settings"></i>
+			Settings
+		</div>
+	</div>
+
+	<script>
+		// --- CONFIG & STATE ---
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7W2Wog8QfuYfGd4jPI-rPP-LUpRrckdR1A1pP20ZqXEysWfKfhPp-bHOTMRzNQ1rb/exec';
+		let user = null, partner = null, isRoom = false, allContacts = [], allRooms = [], chatInterval;
+		let pendingMedia = "", selectedMsgId = null;
+
+		async function api(p) {
+			const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(p) });
+			return await r.json();
+		}
+
+		// --- LOGIN ---
+		async function handleLogin(btn) {
+			btn.innerText = "Connecting...";
+			const res = await api({ action: "login", identifier: document.getElementById('idInput').value, password: document.getElementById('passInput').value });
+			
+			if(res.status === "success") {
+				user = res.user;
+				document.getElementById('loginScreen').classList.remove('active');
+				document.getElementById('navBar').classList.remove('hidden');
+				
+				if(user.type && user.type.trim() === "Admin") {
+					document.getElementById('adminMenu').classList.remove('hidden');
+				}
+				
+				if(user.bg) document.getElementById('chatBox').style.backgroundImage = `url(${user.bg})`;
+				if(user.theme) document.body.className = `theme-${user.theme}`;
+				
+				setupProfileUI();
+				await loadData();
+				switchTab('dashScreen', document.querySelectorAll('.nav-tab')[0]);
+				fetchRecentChats();
+				setInterval(fetchRecentChats, 10000);
+			} else {
+				alert("Invalid Login");
+				btn.innerText = "Continue";
+			}
+		}
+
+		async function loadData() {
+			const resC = await api({ action: "getProfiles" });
+			allContacts = resC.profiles || [];
+			const resR = await api({ action: "getRooms" });
+			allRooms = resR.rooms || [];
+			
+			document.getElementById('newChatContactList').innerHTML = allContacts.filter(u => u.name !== user.name).map(p => `
+				<div class="chat-list-item" onclick="closeModal('newChatModal'); startChat('${p.name}', false);">
+					<img src="${p.pfp || `https://ui-avatars.com/api/?name=${p.name}`}">
+					<div class="chat-info"><div class="chat-name">${p.name}</div></div>
+				</div>`).join('');
+		}
+
+		function switchTab(id, el) {
+			document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+			document.getElementById(id).classList.add('active');
+			if(el) {
+				document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
+				el.classList.add('active');
+			}
+			lucide.createIcons();
+		}
+
+		// --- RECENTS & GROUPS ---
+		async function fetchRecentChats() {
+			if(!document.getElementById('dashScreen').classList.contains('active')) return;
+			
+			const res = await api({ action: "getRecentChats", me: user.name });
+			const list = document.getElementById('recentChatsList');
+			
+			if(!res.recents || res.recents.length === 0) {
+				list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--ios-subtext);">No chats yet.<br>Tap + to start.</div>`;
+				return;
+			}
+
+			list.innerHTML = res.recents.map(r => {
+				let pfp;
+				if(r.isRoom) {
+					const rm = allRooms.find(x => x.name === r.partner);
+					pfp = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${r.partner}&background=random`;
+				} else {
+					const contact = allContacts.find(c => c.name === r.partner) || {};
+					pfp = contact.pfp || `https://ui-avatars.com/api/?name=${r.partner}`;
+				}
+				return `
+				<div class="chat-list-item" onclick="startChat('${r.partner}', ${r.isRoom})">
+					<img src="${pfp}">
+					<div class="chat-info">
+						<div class="chat-name-row">
+							<div class="chat-name">${r.partner}</div>
+							<div class="chat-time">${r.time}</div>
+						</div>
+						<div class="chat-preview">${r.lastMsg}</div>
+					</div>
+				</div>`;
+			}).join('');
+		}
+
+		function showGroupModal() {
+			const list = document.getElementById('groupSelectionList');
+			list.innerHTML = allContacts.filter(u => u.name !== user.name).map(u => `
+				<div class="chat-list-item" style="padding: 8px 0;">
+					<input type="checkbox" class="group-checkbox" value="${u.name}" style="width:20px; height:20px; margin-right:15px;">
+					<img src="${u.pfp || `https://ui-avatars.com/api/?name=${u.name}`}" style="width:40px; height:40px;">
+					<b>${u.name}</b>
+				</div>`).join('');
+			document.getElementById('groupModal').style.display = 'flex';
+		}
+
+		async function createGroupFinal() {
+			const name = document.getElementById('newGroupName').value;
+			const checked = Array.from(document.querySelectorAll('.group-checkbox:checked')).map(c => c.value);
+			checked.push(user.name);
+			if(!name || checked.length < 2) return alert("Enter name and select at least 1 person.");
+			
+			await api({ action: "addRoom", name: name, members: checked.join(',') });
+			closeModal('groupModal');
+			await loadData();
+			fetchRecentChats();
+			startChat(name, true);
+		}
+
+		// --- CHAT LOGIC ---
+		function startChat(name, isRm = false) {
+			partner = name;
+			isRoom = isRm;
+			document.getElementById('chatHeader').innerText = name;
+			
+			if(isRm) {
+				const rm = allRooms.find(x => x.name === name);
+				document.getElementById('chatHeaderPfp').src = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${name}&background=random`;
+			} else {
+				const contact = allContacts.find(c => c.name === name) || {};
+				document.getElementById('chatHeaderPfp').src = contact.pfp || `https://ui-avatars.com/api/?name=${name}`;
+			}
+
+			const callBtn = document.getElementById('callBtn');
+			callBtn.classList.remove('hidden');
+			
+			document.getElementById('chatScreen').style.display = 'flex';
+			loadMessages();
+			clearInterval(chatInterval);
+			chatInterval = setInterval(() => { if(!document.hidden) loadMessages(); }, 5000);
+		}
+
+		async function loadMessages() {
+			if(!partner) return;
+			const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
+			const chatBox = document.getElementById('chatBox');
+			const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
+			
+			chatBox.innerHTML = (res.messages || []).map(m => {
+				let content = m.text;
+				// Media Handling
+				if (m.media.startsWith("data:audio")) content += `<br><audio controls src="${m.media}" style="height: 30px; margin-top: 4px;"></audio>`;
+				else if (m.media.startsWith("data:image")) content += `<br><img src="${m.media}" class="media">`;
+				
+				return `
+				<div class="msg ${m.sender === user.name ? 'sent' : 'received'}" 
+					 oncontextmenu="openMsgMenu(event, '${m.msgId}', '${m.sender}')">
+					${isRoom && m.sender !== user.name ? `<small style="font-weight:600; font-size:11px; color:var(--ios-blue); margin-bottom:2px;">${m.sender}</small>` : ''}
+					<div class="msg-content">${content}</div>
+					<div class="msg-meta">
+						${m.time} ${m.status==='edited'?'(edited)':''}
+						${m.sender === user.name ? '<i data-lucide="check" style="width:12px;"></i>' : ''}
+					</div>
+				</div>`;
+			}).join('');
+			
+			if (isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
+			lucide.createIcons();
+		}
+
+		async function sendMsg(overrideText = null) {
+			const inp = document.getElementById('chatInput');
+			const text = overrideText || inp.value.trim();
+			if(!text && !pendingMedia) return;
+
+			await api({ action: "sendMessage", sender: user.name, receiver: partner, text: text, media: pendingMedia, isRoom: isRoom });
+			inp.value = "";
+			pendingMedia = "";
+			inp.placeholder = "Message";
+			loadMessages();
+		}
+
+		// --- MEDIA & RECORDING ---
+		function attachMedia(input) {
+			if (!input.files[0]) return;
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.src = e.target.result;
+				img.onload = () => {
+					const canvas = document.createElement('canvas');
+					const scale = 400 / img.width;
+					canvas.width = 400;
+					canvas.height = img.height * scale;
+					const ctx = canvas.getContext('2d');
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					pendingMedia = canvas.toDataURL('image/jpeg', 0.6);
+					document.getElementById('chatInput').placeholder = "Image attached...";
+				};
+			};
+			reader.readAsDataURL(input.files[0]);
+		}
+
+		let mediaRecorder, audioChunks = [];
+		async function startRecording() {
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				mediaRecorder = new MediaRecorder(stream);
+				mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+				mediaRecorder.onstop = () => {
+					const r = new FileReader();
+					r.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
+					r.onloadend = () => {
+						pendingMedia = r.result;
+						sendMsg("🎙️ Voice Note");
+					};
+					audioChunks = [];
+				};
+				mediaRecorder.start();
+				document.getElementById('chatControls').classList.add('recording-active');
+				drawVisualizer();
+			} catch(e) { alert("Mic denied."); }
+		}
+		function stopRecording() {
+			if(mediaRecorder && mediaRecorder.state === "recording") {
+				mediaRecorder.stop();
+				document.getElementById('chatControls').classList.remove('recording-active');
+			}
+		}
+		function drawVisualizer() {
+			const canvas = document.getElementById("visualizer");
+			const ctx = canvas.getContext("2d");
+			if(!document.getElementById('chatControls').classList.contains('recording-active')) {
+				ctx.clearRect(0,0,canvas.width,canvas.height); return;
+			}
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.fillStyle = "var(--ios-blue)";
+			for(let i=0; i<5; i++) {
+				let h = Math.random() * 20 + 5;
+				ctx.fillRect(i*20 + 10, 15 - h/2, 10, h);
+			}
+			requestAnimationFrame(drawVisualizer);
+		}
+
+		// --- ADMIN & UTILS ---
+		async function openAdminConsole() {
+			const userList = document.getElementById('adminUserList');
+			const roomList = document.getElementById('adminRoomList');
+			userList.innerHTML = allContacts.map(c => `
+				<div class="settings-item">
+					<div><b>${c.name}</b><br><small class="muted">${c.type || 'User'}</small></div>
+					<div>
+						<i data-lucide="edit" style="color:var(--ios-blue); margin-right:15px; cursor:pointer;" onclick="adminOpenEditUser('${c.name}', '${c.email}', '${c.phone}', '${c.type}')"></i>
+						<i data-lucide="trash" style="color:#FF3B30; cursor:pointer;" onclick="adminDeleteUser('${c.name}')"></i>
+					</div>
+				</div>`).join('');
+			roomList.innerHTML = allRooms.map(r => `
+				<div class="settings-item">
+					<div><b>${r.name}</b><br><small class="muted">${r.members.split(',').length} members</small></div>
+					<div>
+						<i data-lucide="trash" style="color:#FF3B30; cursor:pointer;" onclick="adminDeleteRoom('${r.name}')"></i>
+					</div>
+				</div>`).join('');
+			lucide.createIcons();
+			openModal('adminModal');
+		}
+
+		async function adminSaveNewUser() {
+			const n = document.getElementById('addUserName').value;
+			const e = document.getElementById('addUserEmail').value;
+			const p = document.getElementById('addUserPass').value;
+			const ph = document.getElementById('addUserPhone').value;
+			const t = document.getElementById('addUserType').value;
+			if(!n || !e || !p) return alert("Name, Email, and Password required.");
+			await api({ action: "addUser", name: n, email: e, password: p, phone: ph, type: t });
+			closeModal('adminAddUserModal'); alert("User Added"); await loadData(); openAdminConsole();
+		}
+
+		async function adminDeleteUser(name) {
+			if(confirm(`Delete user ${name}?`)) { await api({action: "deleteUser", name: name}); await loadData(); openAdminConsole(); }
+		}
+
+		async function adminDeleteRoom(name) {
+			if(confirm(`Delete group ${name}?`)) { await api({action: "deleteRoom", name: name}); await loadData(); openAdminConsole(); }
+		}
+
+		// --- PROFILE & THEMES ---
+		function setupProfileUI() {
+			document.getElementById('myNameDisplay').innerText = user.name;
+			document.getElementById('myStatusDisplay').innerText = user.status || "Hey there! I'm using iMind.";
+			document.getElementById('myPfpDisplay').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
+			document.getElementById('editName').value = user.name;
+			document.getElementById('editStatus').value = user.status || "";
+			document.getElementById('editPhone').value = user.phone || "";
+			document.getElementById('editPfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
+		}
+
+		async function saveProfileChanges() {
+			const name = document.getElementById('editName').value;
+			const stat = document.getElementById('editStatus').value;
+			const ph = document.getElementById('editPhone').value;
+			const res = await api({ action: "updateProfile", oldEmail: user.email, name: name, status: stat, phone: ph, pfp: user.pfp });
+			if(res.status === "success") { user = res.user; setupProfileUI(); closeModal('editProfileModal'); }
+		}
+
+		function uploadFile(input, type) {
+			if (!input.files[0]) return;
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.src = e.target.result;
+				img.onload = () => {
+					const canvas = document.createElement('canvas');
+					const scale = (type==='pfp'?200:600) / img.width;
+					canvas.width = (type==='pfp'?200:600);
+					canvas.height = img.height * scale;
+					const ctx = canvas.getContext('2d');
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					const b64 = canvas.toDataURL('image/jpeg', 0.6);
+					if(type === 'pfp') { user.pfp = b64; document.getElementById('editPfpPreview').src = b64; }
+					if(type === 'bg') { user.bg = b64; document.getElementById('chatBox').style.backgroundImage = `url(${b64})`; api({ action: "updateProfile", oldEmail: user.email, bg: b64 }); }
+				};
+			};
+			reader.readAsDataURL(input.files[0]);
+		}
+
+		function clearBg() { user.bg = ""; document.getElementById('chatBox').style.backgroundImage = "none"; api({ action: "updateProfile", oldEmail: user.email, bg: "" }); }
+		function setTheme(t) { document.body.className = `theme-${t}`; api({ action: "updateProfile", oldEmail: user.email, theme: t }); }
+
+		// --- MODALS & MENUS ---
+		function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+		function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+		function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); fetchRecentChats(); }
+		
+		function openMsgMenu(e, id, sender) { e.preventDefault(); if (sender !== user.name && user.type.trim() !== "Admin") return; selectedMsgId = id; document.getElementById('msgActionMenu').style.display = 'block'; }
+		function closeMsgMenu() { document.getElementById('msgActionMenu').style.display = 'none'; selectedMsgId = null; }
+		
+		async function editSelectedMsg() {
+			closeMsgMenu(); const t = prompt("Edit message:"); if(t) { await api({ action: "editMessage", msgId: selectedMsgId, newText: t, receiver: partner, isRoom: isRoom }); loadMessages(); }
+		}
+		async function deleteSelectedMsg() {
+			closeMsgMenu(); if(confirm("Delete for everyone?")) { await api({ action: "deleteMessage", msgId: selectedMsgId, receiver: partner, isRoom: isRoom }); loadMessages(); }
+		}
+
+		function viewPartnerProfile() {
+			// Simplified profile view (reuse logic from original but cleaner UI)
+			const overlay = document.createElement('div');
+			overlay.className = "modal";
+			overlay.style.display = "flex";
+			overlay.style.background = "var(--ios-bg)";
+			
+			let content = '';
+			if(isRoom) {
+				const rm = allRooms.find(x => x.name === partner) || {name: partner, members: ""};
+				content = `
+					<div class="ios-header" style="background:var(--ios-card); color:var(--ios-text); border-bottom:1px solid var(--ios-border);">
+						<button onclick="this.parentElement.parentElement.remove()" style="color:var(--ios-blue); background:none; border:none; font-size:16px;">Back</button>
+						<span>Group Info</span>
+						<div style="width:60px;"></div>
+					</div>
+					<div style="text-align:center; padding:30px 20px; background:var(--ios-card);">
+						<img src="${rm.icon || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+						<h2 style="margin:0;">${partner}</h2>
+						<p class="muted">${rm.members.split(',').length} participants</p>
+					</div>
+					<div class="settings-group">
+						<div class="settings-item" onclick="clearCurrentChat()"><span style="color:#FF3B30; width:100%; text-align:center;">Clear History</span></div>
+					</div>`;
+			} else {
+				const contact = allContacts.find(c => c.name === partner) || { name: partner, status: "Available", phone: "" };
+				content = `
+					<div class="ios-header" style="background:var(--ios-card); color:var(--ios-text); border-bottom:1px solid var(--ios-border);">
+						<button onclick="this.parentElement.parentElement.remove()" style="color:var(--ios-blue); background:none; border:none; font-size:16px;">Back</button>
+						<span>Contact</span>
+						<div style="width:60px;"></div>
+					</div>
+					<div style="text-align:center; padding:30px 20px; background:var(--ios-card);">
+						<img src="${contact.pfp || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
+						<h2 style="margin:0;">${partner}</h2>
+						<p class="muted">${contact.status}</p>
+					</div>
+					<div class="settings-group">
+						<div class="settings-item" onclick="clearCurrentChat()"><span style="color:#FF3B30; width:100%; text-align:center;">Clear History</span></div>
+					</div>`;
+			}
+			overlay.innerHTML = content;
+			document.body.appendChild(overlay);
+		}
+
+		async function clearCurrentChat() {
+			if(confirm("Erase all messages permanently?")) {
+				await api({ action: "clearChat", me: user.name, partner: partner, isRoom: isRoom });
+				document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'chatScreen') m.remove(); });
+				loadMessages();
+			}
+		}
+
+		// Initialize Icons
+		lucide.createIcons();
+	</script>
+</body>
 </html>
