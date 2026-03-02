@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<title>iMind Pro — Liquid Glass</title>
@@ -158,6 +158,42 @@
 			.panel.active { display:flex; }
 			.screen { border-radius:0; }
 		}
+
+		/* ── Notch / Safe Area Support ───────────────────────────────────────
+		   Covers: iPhone notch, Dynamic Island, Android punch-hole,
+		   home indicator bar, and landscape side cutouts.
+		   env() values are provided by the browser when the device has
+		   a physical cutout or rounded corners.                            */
+		@supports (padding: env(safe-area-inset-top)) {
+			html {
+				/* Push the whole page down past the status bar / notch */
+				padding-top: env(safe-area-inset-top);
+				padding-bottom: env(safe-area-inset-bottom);
+				padding-left: env(safe-area-inset-left);
+				padding-right: env(safe-area-inset-right);
+			}
+			/* Tab bar at the bottom sits above the home indicator */
+			.tab-bar {
+				padding-bottom: calc(10px + env(safe-area-inset-bottom));
+			}
+			/* Top headers clear the notch when full-screen */
+			.header:first-child {
+				padding-top: calc(16px + env(safe-area-inset-top));
+			}
+			/* Call panel full-screen header */
+			.call-header {
+				padding-top: calc(14px + env(safe-area-inset-top));
+			}
+			/* Modals: push content away from side cutouts in landscape */
+			.modal-box {
+				margin-left: env(safe-area-inset-left);
+				margin-right: env(safe-area-inset-right);
+			}
+			/* Toast: rise above home indicator */
+			#toast {
+				bottom: calc(30px + env(safe-area-inset-bottom));
+			}
+		}
 	</style>
 </head>
 <body class="theme-light">
@@ -222,7 +258,7 @@
 					<div style="display:flex;gap:6px">
 						<button class="btn" title="Voice Call" onclick="startCall('audio')"><i data-lucide="phone"></i></button>
 						<button class="btn" title="Video Call" onclick="startCall('video')"><i data-lucide="video"></i></button>
-						<button class="btn btn-danger btn-sm" title="Clear Chat" onclick="confirmClearChat()"><i data-lucide="trash-2"></i></button>
+						<button class="btn" title="Chat Options" onclick="openChatOptions(event)"><i data-lucide="more-vertical"></i></button>
 						<button class="btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
 					</div>
 				</div>
@@ -248,12 +284,20 @@
 	<iframe id="jitsiFrame" allow="camera;microphone;fullscreen;display-capture"></iframe>
 </div>
 
-<!-- CONTEXT MENU -->
+<!-- MESSAGE CONTEXT MENU -->
 <div id="ctxMenu" class="ctx-menu glass" style="display:none">
 	<div class="ctx-item" id="ctxCopyBtn" onclick="ctxCopy()"><i data-lucide="copy"></i> Copy</div>
 	<div class="ctx-item" id="ctxEditBtn" onclick="ctxEdit()"><i data-lucide="pencil"></i> Edit</div>
 	<div class="ctx-sep"></div>
-	<div class="ctx-item danger" id="ctxDelBtn" onclick="ctxDelete()"><i data-lucide="trash-2"></i> Delete</div>
+	<div class="ctx-item danger" id="ctxDelMeBtn" onclick="ctxDeleteForMe()"><i data-lucide="eye-off"></i> Delete for Me</div>
+	<div class="ctx-item danger" id="ctxDelAllBtn" onclick="ctxDeleteForAll()"><i data-lucide="trash-2"></i> Delete for Everyone</div>
+</div>
+
+<!-- CHAT OPTIONS DROPDOWN (⋯ button) -->
+<div id="chatOptionsMenu" class="ctx-menu glass" style="display:none">
+	<div class="ctx-item" onclick="chatOptClear()"><i data-lucide="eraser"></i> Clear Chat</div>
+	<div class="ctx-sep"></div>
+	<div class="ctx-item danger" onclick="chatOptDelete()"><i data-lucide="trash-2"></i> Delete Chat</div>
 </div>
 
 <!-- USER PROFILE VIEW MODAL -->
@@ -523,7 +567,7 @@
 <script>
 // =================== CONFIG ===================
 // Replace this URL with your deployed Google Apps Script URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7UXsVbXsMcnM802jY1inzhVViIoUzdJOBeoBHVq-q9jCJnvWS_4BUhGJG1gkbMnD4/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDl-ntA7Tobqm9dycraHzsM9yXz0FzOixOSg7kN6VAS_JcwW2HeWFfJeB6VvVj6sjg/exec';
 
 // =================== STATE ===================
 let user = null, partner = null, isRoom = false, chatInterval = null;
@@ -587,6 +631,8 @@ async function handleLogin() {
 		api({ action: 'getProfiles' }).then(r => { allUsers = r.profiles || []; });
 		api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; });
 		setInterval(fetchRecentChats, 10000);
+		// Request notification permission and start background polling
+		requestNotifications().then(startNotifPolling);
 		lucide.createIcons();
 	} else {
 		errEl.style.display = 'block';
@@ -675,7 +721,9 @@ function startChatFromSearch(name, isGrp) {
 
 document.addEventListener('click', e => {
 	if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').style.display = 'none';
-	if (!e.target.closest('#ctxMenu')) document.getElementById('ctxMenu').style.display = 'none';
+	if (!e.target.closest('#ctxMenu'))         document.getElementById('ctxMenu').style.display = 'none';
+	if (!e.target.closest('#chatOptionsMenu') && !e.target.closest('[onclick*="openChatOptions"]'))
+		document.getElementById('chatOptionsMenu').style.display = 'none';
 });
 
 // =================== CHAT ===================
@@ -688,8 +736,14 @@ function startChat(name, isRm) {
 	document.getElementById('chatHeaderPfp').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
 	document.getElementById('chatHeaderSub').textContent = isRoom ? 'Group' : 'Online';
 	clearInterval(chatInterval);
-	loadMessages();
+	loadMessages().then(seedLastMsgIds);
 	chatInterval = setInterval(loadMessages, 5000);
+}
+
+// After loading messages, mark all current msgIds as seen so we don't re-notify
+async function seedLastMsgIds() {
+	const res = await api({ action: 'getMessages', me: user.name, partner, isRoom });
+	(res.messages || []).forEach(m => { if (m.msgId) lastMsgIds.add(m.msgId); });
 }
 
 async function loadMessages() {
@@ -749,38 +803,167 @@ function closeChat() {
 	document.getElementById('noChatSelected').style.display = 'block';
 }
 
-// =================== CONTEXT MENU ===================
+// =================== MESSAGE CONTEXT MENU ===================
 function showCtx(e, el) {
 	e.preventDefault();
-	ctxMsgId = el.dataset.id; ctxMsgText = el.dataset.text; ctxMsgOwn = el.dataset.own === 'true';
+	// Close chat options if open
+	document.getElementById('chatOptionsMenu').style.display = 'none';
+	ctxMsgId  = el.dataset.id;
+	ctxMsgText = el.dataset.text;
+	ctxMsgOwn  = el.dataset.own === 'true';
 	const menu = document.getElementById('ctxMenu');
-	document.getElementById('ctxEditBtn').style.display = ctxMsgOwn ? 'flex' : 'none';
-	document.getElementById('ctxDelBtn').style.display = ctxMsgOwn ? 'flex' : 'none';
+	document.getElementById('ctxEditBtn').style.display   = ctxMsgOwn ? 'flex' : 'none';
+	// "Delete for me"  — always visible (silently hides from own view only)
+	document.getElementById('ctxDelMeBtn').style.display  = 'flex';
+	// "Delete for everyone" — only own messages
+	document.getElementById('ctxDelAllBtn').style.display = ctxMsgOwn ? 'flex' : 'none';
 	menu.style.display = 'block';
-	menu.style.left = Math.min(e.clientX, window.innerWidth - 175) + 'px';
-	menu.style.top  = Math.min(e.clientY, window.innerHeight - 130) + 'px';
+	menu.style.left = Math.min(e.clientX, window.innerWidth  - 200) + 'px';
+	menu.style.top  = Math.min(e.clientY, window.innerHeight - 150) + 'px';
 	lucide.createIcons();
 }
 
 function ctxCopy() {
 	navigator.clipboard.writeText(ctxMsgText||'').catch(()=>{});
 	toast('Copied ✓');
+	document.getElementById('ctxMenu').style.display = 'none';
 }
 
 function ctxEdit() {
+	document.getElementById('ctxMenu').style.display = 'none';
 	const newText = prompt('Edit message:', ctxMsgText);
 	if (newText === null || newText.trim() === ctxMsgText) return;
 	api({ action: 'editMessage', msgId: ctxMsgId, newText: newText.trim(), receiver: partner, isRoom }).then(loadMessages);
 }
 
-function ctxDelete() {
+// Delete for Me — silent local deletion (replace text client-side only, no server notify)
+function ctxDeleteForMe() {
+	document.getElementById('ctxMenu').style.display = 'none';
+	// Find the bubble by msgId and visually remove it without calling the API
+	// We tag it with a data-id so we can find it in the DOM
+	const el = document.querySelector(`.bubble[data-id="${CSS.escape(ctxMsgId)}"]`);
+	if (el) {
+		el.style.transition = 'opacity 0.25s, transform 0.25s';
+		el.style.opacity = '0';
+		el.style.transform = 'scale(0.92)';
+		setTimeout(() => el.remove(), 260);
+	}
+	toast('Message hidden');
+}
+
+// Delete for Everyone — marks deleted on server, visible to all
+function ctxDeleteForAll() {
+	document.getElementById('ctxMenu').style.display = 'none';
 	if (!confirm('Delete this message for everyone?')) return;
 	api({ action: 'deleteMessage', msgId: ctxMsgId, receiver: partner, isRoom }).then(loadMessages);
 }
 
-function confirmClearChat() {
-	if (!partner || !confirm(`Clear all messages with ${partner}? This cannot be undone.`)) return;
+// =================== CHAT OPTIONS MENU (⋯) ===================
+function openChatOptions(e) {
+	e.stopPropagation();
+	// Close msg context if open
+	document.getElementById('ctxMenu').style.display = 'none';
+	const menu = document.getElementById('chatOptionsMenu');
+	if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+	menu.style.display = 'block';
+	// Position below the ⋯ button
+	const btn  = e.currentTarget;
+	const rect = btn.getBoundingClientRect();
+	menu.style.right = (window.innerWidth - rect.right) + 'px';
+	menu.style.left  = 'auto';
+	menu.style.top   = (rect.bottom + 6) + 'px';
+	lucide.createIcons();
+}
+
+function chatOptClear() {
+	document.getElementById('chatOptionsMenu').style.display = 'none';
+	if (!partner || !confirm(`Clear all messages with ${partner}?\nThis removes them for everyone and cannot be undone.`)) return;
 	api({ action: 'clearChat', me: user.name, partner, isRoom }).then(() => { toast('Chat cleared'); loadMessages(); });
+}
+
+async function chatOptDelete() {
+	document.getElementById('chatOptionsMenu').style.display = 'none';
+	if (!partner || !confirm(`Delete this entire chat with ${partner}?\nThis cannot be undone.`)) return;
+	// Clear messages + remove from RecentChats
+	await api({ action: 'clearChat',  me: user.name, partner, isRoom });
+	await api({ action: 'deleteChat', me: user.name, partner, isRoom });
+	toast('Chat deleted');
+	closeChat();
+	fetchRecentChats();
+}
+
+// =================== NOTIFICATIONS ===================
+let notifPermission = 'default';
+let lastMsgIds = new Set(); // track seen message IDs to avoid duplicate notifications
+
+async function requestNotifications() {
+	if (!('Notification' in window)) return;
+	if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
+	if (Notification.permission !== 'denied') {
+		const perm = await Notification.requestPermission();
+		notifPermission = perm;
+	}
+}
+
+function fireNotification(senderName, text, isGroup, groupName) {
+	if (Notification.permission !== 'granted') return;
+	// Don't notify for own messages or for the currently open chat
+	if (senderName === user?.name) return;
+	if (!document.hidden && partner === (isGroup ? groupName : senderName)) return;
+
+	const title = isGroup ? `${groupName}` : senderName;
+	const body  = isGroup ? `${senderName}: ${text}` : text;
+	const icon  = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=007aff&color=fff`;
+
+	try {
+		const notif = new Notification(title, {
+			body  : body.length > 80 ? body.slice(0, 80) + '…' : body,
+			icon,
+			badge : icon,
+			tag   : `imind-${isGroup ? groupName : senderName}`, // group by chat so they stack
+			renotify: true,
+			silent: false
+		});
+		notif.onclick = () => {
+			window.focus();
+			startChat(isGroup ? groupName : senderName, isGroup);
+			notif.close();
+		};
+	} catch(err) {
+		console.warn('Notification error:', err);
+	}
+}
+
+// Poll for new messages across ALL recent chats (not just open one) every 8s
+let notifPollInterval = null;
+function startNotifPolling() {
+	if (notifPollInterval) return;
+	notifPollInterval = setInterval(pollAllChatsForNotifs, 8000);
+}
+
+async function pollAllChatsForNotifs() {
+	if (!user || Notification.permission !== 'granted') return;
+	const res = await api({ action: 'getRecentChats', me: user.name });
+	const recents = res.recents || [];
+	for (const r of recents) {
+		const msgRes = await api({ action: 'getMessages', me: user.name, partner: r.partner, isRoom: r.isRoom });
+		const msgs = (msgRes.messages || []).slice(-5); // only check last 5
+		for (const m of msgs) {
+			if (!m.msgId || lastMsgIds.has(m.msgId)) continue;
+			lastMsgIds.add(m.msgId);
+			// Only fire if message is recent (last 20 seconds)
+			const msgTime = parseInt(m.msgId) || 0;
+			const age = Date.now() - msgTime;
+			if (age < 20000 && m.sender !== user.name) {
+				fireNotification(m.sender, m.text || '📎 Media', r.isRoom, r.partner);
+			}
+		}
+	}
+	// Prune old IDs to avoid memory growth
+	if (lastMsgIds.size > 500) {
+		const arr = [...lastMsgIds];
+		lastMsgIds = new Set(arr.slice(-200));
+	}
 }
 
 // =================== CALLS ===================
