@@ -5,922 +5,1309 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<title>iMind</title>
+	<title>iMind Pro — Liquid Glass</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<script src="https://unpkg.com/lucide@latest"></script>
 	<style>
 		:root {
-			--ios-bg: #ffffff;
-			--ios-card: #ffffff;
-			--ios-text: #000000;
-			--ios-subtext: #8E8E93;
-			--ios-blue: #007AFF;
-			--ios-green: #34C759;
-			--ios-border: #C6C6C8;
-			--ios-chat-in: #ffffff;
-			--ios-chat-out: #E9E9EB; /* iOS default bubble out (needs to be green for Telegram style, but we stick to Telegram green below) */
-			--tg-chat-out: #E7FFDB; /* Telegram Green */
-			--tg-chat-in: #FFFFFF;
-			--tg-header-bg: #007AFF;
-			--tg-bg: #F5F5F7; /* Slightly off-white */
+			--bg1: #dfe9f3; --bg2: #ffffff;
+			--text: #0e0e10; --sub: #6b7280;
+			--prim: #007aff; --ok: #34c759;
+			--glass-bg: rgba(255,255,255,0.12);
+			--glass-border: rgba(255,255,255,0.25);
 		}
-
 		body.theme-dark {
-			--ios-bg: #000000;
-			--ios-card: #1C1C1E;
-			--ios-text: #FFFFFF;
-			--ios-subtext: #8E8E93;
-			--ios-blue: #0A84FF;
-			--ios-border: #38383A;
-			--tg-chat-out: #005c4b; /* Telegram Dark Green */
-			--tg-chat-in: #202C33; /* Telegram Dark In */
-			--tg-header-bg: #1C1C1E;
-			--tg-bg: #0B141A; /* Telegram Dark BG */
+			--bg1: #0b141a; --bg2: #121b22;
+			--text: #f3f3f3; --sub: #9aa4ae;
+			--prim: #0a84ff; --ok: #30d158;
+			--glass-bg: rgba(18,18,18,0.35);
+			--glass-border: rgba(255,255,255,0.08);
 		}
-
-		* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-		body, html { height: 100%; margin: 0; overflow: hidden; background: var(--tg-bg); color: var(--ios-text); transition: background 0.3s; }
-
-		/* Screens & Navigation */
-		.screen { display: none; height: 100vh; flex-direction: column; width: 100%; position: absolute; top: 0; left: 0; background: var(--tg-bg); }
-		.screen.active { display: flex; animation: slideIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 10; }
-		@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-		/* Header (iOS Style) */
-		.ios-header {
-			padding: 12px 16px;
-			background: var(--tg-header-bg);
-			color: white;
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			font-weight: 600;
-			font-size: 21px;
-			position: sticky;
-			top: 0;
-			z-index: 100;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-			height: 60px;
-		}
-		.ios-header .left-btn { background: none; border: none; color: white; padding: 0; display: flex; align-items: center; font-size: 16px; font-weight: 500; }
-		.ios-header .right-btn { background: none; border: none; color: white; padding: 0; font-weight: 500; font-size: 16px; }
-		
-		/* Chat List Items */
-		.chat-list-item {
-			display: flex;
-			align-items: center;
-			padding: 12px 16px;
-			background: var(--ios-card);
-			border-bottom: 0.5px solid var(--ios-border);
-			cursor: pointer;
-			transition: background 0.1s;
-		}
-		.chat-list-item:active { background: #f2f2f7; }
-		.chat-list-item img {
-			width: 58px;
-			height: 58px;
-			border-radius: 50%;
-			margin-right: 14px;
-			object-fit: cover;
-			background: #e5e5ea;
-		}
-		.chat-info { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-		.chat-name-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
-		.chat-name { font-size: 17px; font-weight: 600; color: var(--ios-text); }
-		.chat-time { font-size: 12px; color: var(--ios-subtext); font-weight: 400; }
-		.chat-preview { font-size: 15px; color: var(--ios-subtext); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-		/* Chat Screen */
-		#chatBox {
-			flex: 1;
-			overflow-y: auto;
-			padding: 12px 12px 80px 12px; /* Padding bottom for input */
-			display: flex;
-			flex-direction: column;
-			background: var(--tg-bg);
-			background-size: cover;
-			background-position: center;
-		}
-
-		/* Messages - Telegram Style */
-		.msg {
-			max-width: 75%;
-			padding: 8px 12px;
-			margin-bottom: 4px;
-			font-size: 16px;
-			line-height: 1.35;
-			word-wrap: break-word;
-			position: relative;
-			display: flex;
-			flex-direction: column;
-		}
-		.sent {
-			background: var(--tg-chat-out);
-			color: var(--ios-text);
-			align-self: flex-end;
-			border-top-right-radius: 8px;
-			border-bottom-right-radius: 8px;
-			border-top-left-radius: 8px;
-		}
-		.received {
-			background: var(--tg-chat-in);
-			color: var(--ios-text);
-			align-self: flex-start;
-			border-top-right-radius: 8px;
-			border-bottom-right-radius: 8px;
-			border-top-left-radius: 8px;
-		}
-		.msg-content { margin-bottom: 2px; }
-		.msg-meta {
-			align-self: flex-end;
-			display: flex;
-			align-items: center;
-			gap: 4px;
-			font-size: 11px;
-			color: var(--ios-subtext);
-			margin-top: 2px;
-			font-weight: 500;
-		}
-		.msg img.media { max-width: 100%; border-radius: 8px; margin-top: 6px; }
-		
-		/* Chat Input Area - Telegram Style */
-		.chat-input-area {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			padding: 8px 12px 16px 12px;
-			background: var(--tg-bg); /* Matches bg to blend */
-			display: flex;
-			align-items: flex-end;
-			gap: 8px;
-			z-index: 50;
-			border-top: 1px solid rgba(0,0,0,0.05);
-		}
-		.input-wrapper {
-			flex: 1;
-			background: var(--ios-card);
-			border-radius: 20px;
-			padding: 8px 12px;
-			display: flex;
-			align-items: center;
-			border: 1px solid var(--ios-border);
-		}
-		.chat-input {
-			width: 100%;
-			border: none;
-			outline: none;
-			background: transparent;
-			font-size: 16px;
-			color: var(--ios-text);
-			margin: 0;
-			padding: 0;
-			resize: none;
-			max-height: 100px;
-			font-family: inherit;
-		}
-		.input-action-btn {
-			width: 36px;
-			height: 36px;
-			border-radius: 50%;
-			border: none;
-			background: var(--ios-blue);
-			color: white;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			flex-shrink: 0;
-			box-shadow: 0 2px 5px rgba(0,122,255,0.4);
-		}
-		.input-action-btn.secondary {
-			background: transparent;
-			box-shadow: none;
-			color: var(--ios-subtext);
-		}
-
-		/* Bottom Tab Bar */
-		.ios-nav {
-			position: fixed;
-			bottom: 0;
-			width: 100%;
-			height: 50px;
-			background: var(--ios-card);
-			display: flex;
-			border-top: 0.5px solid var(--ios-border);
-			z-index: 100;
-			padding-bottom: env(safe-area-inset-bottom);
-		}
-		.nav-tab {
-			flex: 1;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			font-size: 10px;
-			color: var(--ios-subtext);
-			cursor: pointer;
-			gap: 2px;
-		}
-		.nav-tab.active { color: var(--ios-blue); }
-		.nav-tab svg { width: 22px; height: 22px; }
-
-		/* FAB (Floating Action Button) */
-		.fab {
-			position: fixed;
-			bottom: 75px; /* Above nav bar */
-			right: 16px;
-			width: 56px;
-			height: 56px;
-			background: var(--ios-blue);
-			border-radius: 50%;
-			color: white;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			box-shadow: 0 4px 12px rgba(0,122,255,0.4);
-			cursor: pointer;
-			z-index: 90;
-			transition: transform 0.2s;
-		}
-		.fab:active { transform: scale(0.95); }
-
+		* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
+		html,body { height:100%; margin:0; font-family:'Inter',sans-serif; background:linear-gradient(145deg,var(--bg1),var(--bg2)) fixed; color:var(--text); overflow:hidden; }
+		.glass { background:var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%); box-shadow:0 10px 35px rgba(0,0,0,0.15); }
+		.app-container { display:flex; gap:12px; padding:12px; height:100%; }
+		.screen { display:none; flex-direction:column; width:100%; height:100%; border-radius:18px; overflow:hidden; }
+		.screen.active { display:flex; }
+		.sidebar { width:360px; min-width:300px; display:flex; flex-direction:column; }
+		.panel { flex:1; display:flex; flex-direction:column; }
+		.header { display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
+		h1 { font-size:18px; margin:0; font-weight:700; }
+		.btn { padding:10px 16px; border:none; border-radius:12px; font-weight:600; cursor:pointer; transition:0.15s; background:rgba(255,255,255,0.1); color:var(--text); display:flex; align-items:center; justify-content:center; gap:8px; white-space:nowrap; }
+		.btn-prim { background:var(--prim); color:#fff; }
+		.btn:hover { transform:translateY(-1px); background:rgba(255,255,255,0.2); }
+		.btn-prim:hover { background:var(--prim); opacity:0.9; transform:translateY(-1px); }
+		.btn-danger { background:rgba(255,68,68,0.15); color:#ff4444; }
+		.btn-danger:hover { background:rgba(255,68,68,0.28); transform:translateY(-1px); }
+		.btn-sm { padding:6px 10px; font-size:12px; border-radius:9px; }
+		.input-glass { width:100%; padding:12px; border:none; border-radius:14px; background:rgba(255,255,255,0.4); color:var(--text); outline:none; font-family:'Inter',sans-serif; font-size:14px; }
+		body.theme-dark .input-glass { background:rgba(30,30,30,0.4); }
+		.input-glass::placeholder { color:var(--sub); }
+		textarea.input-glass { resize:vertical; }
+		.row { display:flex; align-items:center; padding:12px; border-radius:16px; margin:3px 8px; cursor:pointer; background:rgba(255,255,255,0.05); transition:0.2s; }
+		.row:hover { background:rgba(255,255,255,0.15); }
+		.avatar { width:48px; height:48px; border-radius:50%; margin-right:12px; object-fit:cover; background:var(--prim); flex-shrink:0; }
+		.muted { color:var(--sub); }
+		.messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:8px; }
+		.bubble { max-width:75%; padding:12px 16px; border-radius:18px; line-height:1.4; font-size:15px; word-break:break-word; cursor:context-menu; }
+		.bubble.in { align-self:flex-start; background:rgba(255,255,255,0.5); border-bottom-left-radius:4px; }
+		.bubble.out { align-self:flex-end; background:rgba(0,122,255,0.2); border-bottom-right-radius:4px; }
+		body.theme-dark .bubble.in { background:rgba(40,40,40,0.6); }
+		.login-wrap { max-width:400px; margin:auto; padding:40px; text-align:center; border-radius:24px; }
+		.login-logo { width:80px; height:80px; margin-bottom:20px; border-radius:20px; }
+		.tab-bar { display:flex; justify-content:space-around; padding:10px; border-top:1px solid var(--glass-border); flex-shrink:0; }
+		.tab { color:var(--sub); display:flex; flex-direction:column; align-items:center; font-size:10px; cursor:pointer; gap:3px; padding:4px 8px; border-radius:10px; transition:0.15s; }
+		.tab.active { color:var(--prim); }
+		.tab i { width:20px; height:20px; }
 		/* Modals */
-		.modal {
-			display: none;
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: var(--ios-bg);
-			z-index: 2000;
-			flex-direction: column;
-			animation: modalSlide 0.3s ease;
+		.modal-overlay { display:none; position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.45); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+		.modal-overlay.active { display:flex; }
+		.modal-box { width:90%; max-width:520px; max-height:88vh; overflow-y:auto; border-radius:24px; padding:28px; }
+		.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+		.modal-header h2 { margin:0; font-size:18px; font-weight:700; }
+		/* Forms */
+		.form-group { margin-bottom:14px; }
+		.form-group label { display:block; font-size:11px; font-weight:600; color:var(--sub); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+		.form-row { display:flex; gap:10px; }
+		.form-row .form-group { flex:1; }
+		.form-card { padding:16px; border-radius:14px; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); margin-bottom:16px; }
+		.form-card h3 { margin:0 0 14px; font-size:14px; }
+		/* Admin */
+		.admin-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+		.admin-tab { padding:8px 16px; border-radius:10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--sub); transition:0.15s; }
+		.admin-tab.active { background:var(--prim); color:#fff; }
+		.admin-tab:hover:not(.active) { background:rgba(255,255,255,0.1); }
+		.admin-table { width:100%; border-collapse:collapse; font-size:13px; }
+		.admin-table th { text-align:left; padding:10px 12px; color:var(--sub); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--glass-border); white-space:nowrap; }
+		.admin-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); vertical-align:middle; }
+		.admin-table tr:hover td { background:rgba(255,255,255,0.04); }
+		.badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; }
+		.badge-admin { background:rgba(0,122,255,0.2); color:var(--prim); }
+		.badge-user { background:rgba(52,199,89,0.2); color:var(--ok); }
+		/* Settings */
+		.settings-section { margin-bottom:24px; }
+		.settings-section h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--sub); margin:0 0 12px; }
+		.settings-row { display:flex; align-items:center; justify-content:space-between; padding:12px; border-radius:14px; background:rgba(255,255,255,0.06); margin-bottom:8px; gap:12px; }
+		.settings-row-label { font-size:14px; font-weight:500; }
+		.settings-row-sub { font-size:12px; color:var(--sub); margin-top:2px; }
+		/* Avatar upload */
+		.avatar-upload-wrap { position:relative; width:80px; height:80px; margin:0 auto 16px; }
+		.avatar-upload-wrap img { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--glass-border); }
+		.avatar-upload-btn { position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--prim); color:#fff; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+		.avatar-upload-btn i { width:14px; height:14px; }
+		/* Group icon */
+		.group-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#ff9500,#ff3b30); display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; font-size:20px; }
+		/* Toggle */
+		.toggle { position:relative; width:42px; height:24px; flex-shrink:0; }
+		.toggle input { opacity:0; width:0; height:0; }
+		.toggle-slider { position:absolute; cursor:pointer; inset:0; background:rgba(255,255,255,0.2); border-radius:24px; transition:0.3s; }
+		.toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; }
+		.toggle input:checked+.toggle-slider { background:var(--prim); }
+		.toggle input:checked+.toggle-slider::before { transform:translateX(18px); }
+		/* Search */
+		.search-wrap { position:relative; padding:10px; }
+		.search-results { position:absolute; top:calc(100% - 6px); left:10px; right:10px; z-index:200; border-radius:14px; overflow:hidden; max-height:320px; overflow-y:auto; }
+		.search-result-item { display:flex; align-items:center; padding:10px 14px; cursor:pointer; transition:0.15s; gap:10px; }
+		.search-result-item:hover { background:rgba(255,255,255,0.1); }
+		/* Call panel */
+		#callPanel { display:none; position:fixed; inset:0; z-index:900; background:#000; flex-direction:column; }
+		#callPanel.active { display:flex; }
+		#jitsiFrame { flex:1; border:none; width:100%; }
+		.call-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(0,0,0,0.85); }
+		.call-header span { color:#fff; font-weight:600; font-size:15px; }
+		/* Context menu */
+		.ctx-menu { position:fixed; z-index:800; border-radius:14px; padding:6px; min-width:160px; }
+		.ctx-item { padding:9px 14px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:0.12s; }
+		.ctx-item:hover { background:rgba(255,255,255,0.12); }
+		.ctx-item.danger { color:#ff4444; }
+		.ctx-sep { height:1px; background:var(--glass-border); margin:4px 0; }
+		/* User Profile Card */
+		.profile-card-avatar { width:88px; height:88px; border-radius:50%; object-fit:cover; border:3px solid var(--glass-border); display:block; margin:0 auto 12px; }
+		.profile-card-name { font-size:20px; font-weight:700; text-align:center; margin-bottom:4px; }
+		.profile-card-status { text-align:center; color:var(--sub); font-size:13px; margin-bottom:20px; }
+		.profile-info-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:rgba(255,255,255,0.06); margin-bottom:8px; }
+		.profile-info-row i { width:18px; height:18px; color:var(--prim); flex-shrink:0; }
+		.profile-info-row span { font-size:13px; }
+		/* Group Settings */
+		.group-banner { display:flex; flex-direction:column; align-items:center; padding:20px 0 8px; }
+		.group-banner .gi { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#ff9500,#ff3b30); display:flex; align-items:center; justify-content:center; font-size:34px; margin-bottom:10px; }
+		.group-banner h3 { margin:0 0 4px; font-size:18px; font-weight:700; }
+		.group-banner p { margin:0; color:var(--sub); font-size:13px; text-align:center; }
+		.member-chip { display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:12px; background:rgba(255,255,255,0.06); margin-bottom:6px; }
+		.member-chip img { width:32px; height:32px; border-radius:50%; object-fit:cover; }
+		.member-chip-name { font-size:13px; font-weight:600; flex:1; }
+		.member-chip-role { font-size:11px; color:var(--prim); font-weight:600; }
+		/* Member picker checkboxes */
+		.member-pick-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; transition:0.15s; }
+		.member-pick-item:hover { background:rgba(255,255,255,0.1); }
+		.member-pick-item input[type=checkbox] { width:16px; height:16px; accent-color:var(--prim); cursor:pointer; flex-shrink:0; }
+		.member-pick-item img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+		.member-pick-item .mpn { font-size:13px; font-weight:600; }
+		.member-pick-item .mps { font-size:11px; color:var(--sub); }
+		/* Misc */
+		.no-results { text-align:center; padding:24px; color:var(--sub); font-size:13px; }
+		::-webkit-scrollbar { width:4px; }
+		::-webkit-scrollbar-track { background:transparent; }
+		::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:4px; }
+		@media(max-width:860px) {
+			.app-container { flex-direction:column; padding:0; gap:0; }
+			.sidebar { width:100%; height:100%; min-width:unset; }
+			.panel { width:100%; height:100%; position:fixed; top:0; left:0; z-index:100; display:none; }
+			.panel.active { display:flex; }
+			.screen { border-radius:0; }
 		}
-		@keyframes modalSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-		/* Inputs & Buttons */
-		input[type="text"], input[type="password"], input[type="email"], select, textarea {
-			width: 100%;
-			padding: 12px;
-			border-radius: 10px;
-			border: 1px solid var(--ios-border);
-			outline: none;
-			margin-bottom: 15px;
-			font-size: 16px;
-			background: var(--ios-card);
-			color: var(--ios-text);
-			transition: border 0.2s;
-		}
-		input:focus { border-color: var(--ios-blue); }
-		
-		button.primary-btn {
-			width: 100%;
-			padding: 14px;
-			background: var(--ios-blue);
-			color: white;
-			font-weight: 600;
-			border: none;
-			border-radius: 12px;
-			cursor: pointer;
-			font-size: 16px;
-			margin-top: 10px;
-		}
-
-		/* Settings List */
-		.settings-group { background: var(--ios-card); margin-top: 20px; border-top: 1px solid var(--ios-border); border-bottom: 1px solid var(--ios-border); }
-		.settings-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 0.5px solid var(--ios-border); cursor: pointer; min-height: 48px; }
-		.settings-item:last-child { border-bottom: none; }
-		.settings-item span { font-size: 16px; }
-		.settings-icon { margin-right: 12px; color: var(--ios-blue); }
-
-		/* Login Screen */
-		.login-container { width: 100%; max-width: 320px; margin: 0 auto; text-align: center; padding-top: 60px; }
-		.login-logo { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 20px; object-fit: cover; }
-		.login-title { font-size: 28px; font-weight: 700; margin-bottom: 30px; color: var(--ios-text); }
-
-		/* Utilities */
-		.hidden { display: none !important; }
-		.text-center { text-align: center; }
-		.muted { color: var(--ios-subtext); font-size: 13px; }
-		
-		/* Visualizer */
-		#visualizer { display: none; width: 60px; height: 30px; background: transparent; }
-		.recording-active #visualizer { display: block; }
-		.recording-active .chat-input { display: none; }
-
-		/* Dark Mode Invert Fix */
-		.dark-invert { filter: invert(0); }
-		body.theme-dark .dark-invert { filter: invert(1); }
 	</style>
 </head>
-<body>
+<body class="theme-light">
 
-	<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
+<div class="app-container">
 	<div id="loginScreen" class="screen active">
-		<div class="login-container">
-			<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" alt="Logo" class="login-logo dark-invert" onerror="this.src='https://via.placeholder.com/100'">
-			<div class="login-title">iMind Pro</div>
-			<input type="text" id="idInput" placeholder="Email or Phone" style="margin-bottom: 12px;">
-			<input type="password" id="passInput" placeholder="Password" style="margin-bottom: 12px;">
-			<button class="primary-btn" onclick="handleLogin(this)">Continue</button>
+		<div class="login-wrap glass">
+			<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" class="login-logo" onerror="this.style.display='none'">
+			<h2 style="margin-bottom:30px">iMind Pro</h2>
+			<div class="form-group"><input type="text" id="idInput" class="input-glass" placeholder="Email or Phone"></div>
+			<div class="form-group" style="margin-bottom:20px"><input type="password" id="passInput" class="input-glass" placeholder="Password" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+			<button id="loginBtn" class="btn btn-prim" style="width:100%" onclick="handleLogin()">Continue</button>
+			<div id="loginErr" style="color:#ff4444;font-size:13px;margin-top:12px;display:none">Invalid credentials — please try again.</div>
 		</div>
 	</div>
 
-	<!-- DASHBOARD (CHATS LIST) -->
-	<div id="dashScreen" class="screen">
-		<div class="ios-header">
-			<span>Edit</span>
-			<span>iMind</span>
-			<button class="ios-header-btn" onclick="openModal('newChatModal')"><i data-lucide="square-plus" style="stroke: white;"></i></button>
-		</div>
-		<div style="padding: 8px 16px; background: var(--tg-bg);">
-			<input type="text" id="contactSearch" placeholder="Search" oninput="filterContacts()" style="margin:0; border-radius: 10px; background: var(--ios-card); border: 1px solid var(--ios-border); padding: 10px;">
-		</div>
-		<div id="recentChatsList" style="flex:1; overflow-y:auto; background: var(--ios-card);">
-			<div style="text-align:center; margin-top:50px; color:var(--ios-subtext);">Loading chats...</div>
-		</div>
-	</div>
+	<!-- MAIN APP -->
+	<div id="mainApp" class="app-container" style="display:none;width:100%;padding:0">
 
-	<!-- SETTINGS SCREEN -->
-	<div id="settingsScreen" class="screen">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<span>Settings</span>
-		</div>
-		<div class="settings-group" style="margin-top: 0;">
-			<div class="settings-item" onclick="openModal('editProfileModal')">
-				<img id="myPfpDisplay" src="" style="width: 54px; height: 54px; border-radius: 50%; margin-right: 12px; object-fit: cover;">
-				<div style="flex:1;">
-					<b id="myNameDisplay" style="font-size: 18px;">Name</b><br>
-					<small id="myStatusDisplay" class="muted">Status</small>
+		<!-- SIDEBAR -->
+		<div class="sidebar glass">
+			<div class="header">
+				<div style="display:flex;align-items:center;gap:10px">
+					<img id="myPfpThumb" src="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--glass-border)" onclick="showTab('profile')" onerror="this.src='https://ui-avatars.com/api/?name=Me&background=007aff&color=fff'">
+					<h1>iMind Pro</h1>
 				</div>
-				<i data-lucide="chevron-right" style="color: var(--ios-subtext);"></i>
-			</div>
-		</div>
-		<div class="settings-group">
-			<div class="settings-item" onclick="openModal('themeModal')">
-				<div class="settings-icon"><i data-lucide="palette"></i></div>
-				<span>Appearance</span>
-			</div>
-			<div class="settings-item admin-only hidden" id="adminMenu" onclick="openAdminConsole()">
-				<div class="settings-icon" style="color: var(--ios-blue);"><i data-lucide="shield"></i></div>
-				<span>Admin Console</span>
-			</div>
-		</div>
-		<div class="settings-group">
-			<div class="settings-item" onclick="location.reload()" style="justify-content: center; color: #FF3B30;">
-				<span>Log Out</span>
-			</div>
-		</div>
-	</div>
-
-	<!-- CHAT SCREEN -->
-	<div id="chatScreen" class="modal" style="animation: none; background: var(--tg-bg);">
-		<div class="ios-header" style="background: var(--tg-header-bg);">
-			<button onclick="closeChat()" class="left-btn"><i data-lucide="chevron-left" style="width: 24px; height: 24px;"></i> Chats</button>
-			<div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="viewPartnerProfile()">
-				<span id="chatHeader" style="font-size: 17px;">Name</span>
-				<img id="chatHeaderPfp" src="" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ddd;">
-			</div>
-			<button id="callBtn" class="ios-header-btn hidden" onclick="window.open('https://meet.jit.si/iMind', '_blank')"><i data-lucide="phone" style="stroke: white;"></i></button>
-		</div>
-		
-		<div id="chatBox"></div>
-
-		<div class="chat-input-area">
-			<button class="input-action-btn secondary" onclick="document.getElementById('mediaUpload').click()">
-				<i data-lucide="plus" style="width: 20px;"></i>
-			</button>
-			<input type="file" id="mediaUpload" style="display:none;" onchange="attachMedia(this)">
-			
-			<div class="input-wrapper">
-				<textarea id="chatInput" class="chat-input" placeholder="Message" rows="1" onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMsg(); }"></textarea>
-				<canvas id="visualizer"></canvas>
+				<button class="btn" title="New Chat / Group" onclick="openNewChatModal()"><i data-lucide="plus"></i></button>
 			</div>
 
-			<button class="input-action-btn secondary" id="recordBtn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">
-				<i data-lucide="mic" style="width: 20px;"></i>
-			</button>
-			
-			<button class="input-action-btn" onclick="sendMsg()">
-				<i data-lucide="send" style="width: 18px; margin-left: 2px;"></i>
-			</button>
-		</div>
-	</div>
-
-	<!-- NEW CHAT MODAL -->
-	<div id="newChatModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('newChatModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
-			<span>New Chat</span>
-			<div style="width: 60px;"></div>
-		</div>
-		<div class="chat-list-item" onclick="closeModal('newChatModal'); showGroupModal();">
-			<div style="width: 58px; height: 58px; border-radius: 50%; background: #34C759; color: white; display: flex; align-items: center; justify-content: center; margin-right: 14px;"><i data-lucide="users"></i></div>
-			<div class="chat-info"><div class="chat-name">New Group</div></div>
-		</div>
-		<div style="padding: 10px 16px; color: var(--ios-subtext); font-size: 13px; font-weight: 600;">CONTACTS</div>
-		<div id="newChatContactList" style="flex:1; overflow-y:auto;"></div>
-	</div>
-
-	<!-- GROUP MODAL -->
-	<div id="groupModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('groupModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
-			<span>New Group</span>
-			<button onclick="createGroupFinal()" class="ios-header-btn" style="color: var(--ios-blue);">Create</button>
-		</div>
-		<div style="padding:20px;">
-			<input type="text" id="newGroupName" placeholder="Group Subject">
-			<p style="font-size:13px; color:var(--ios-subtext); margin-bottom:10px;">SELECT MEMBERS</p>
-		</div>
-		<div id="groupSelectionList" style="flex:1; overflow-y:auto; padding:0 20px;"></div>
-	</div>
-
-	<!-- EDIT PROFILE MODAL -->
-	<div id="editProfileModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('editProfileModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
-			<span>Edit Profile</span>
-			<button onclick="saveProfileChanges()" class="ios-header-btn" style="color: var(--ios-blue);">Save</button>
-		</div>
-		<div style="padding:30px; text-align:center;">
-			<img id="editPfpPreview" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; margin-bottom:10px; border: 2px solid var(--ios-border);">
-			<label style="display:block; color:var(--ios-blue); font-weight:500; cursor:pointer; margin-bottom:20px;">Change Photo<input type="file" style="display:none;" onchange="uploadFile(this, 'pfp')"></label>
-			<input type="text" id="editName" placeholder="Name">
-			<input type="text" id="editStatus" placeholder="About / Status">
-			<input type="text" id="editPhone" placeholder="Phone Number">
-		</div>
-	</div>
-
-	<!-- THEME MODAL -->
-	<div id="themeModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('themeModal')" class="ios-header-btn" style="color: var(--ios-blue);">Back</button>
-			<span>Appearance</span>
-			<div style="width: 60px;"></div>
-		</div>
-		<div class="settings-group">
-			<div class="settings-item" onclick="setTheme('light')"><span>Light</span></div>
-			<div class="settings-item" onclick="setTheme('dark')"><span>Dark</span></div>
-		</div>
-		<div style="padding:20px;">
-			<p class="muted">Chat Background</p>
-			<label class="primary-btn" style="display:inline-block; cursor:pointer; width:auto; padding:10px 20px; background: var(--ios-card); color: var(--ios-text); border: 1px solid var(--ios-border);">Choose Image<input type="file" style="display:none;" onchange="uploadFile(this, 'bg')"></label>
-			<br><br><button onclick="clearBg()" style="background:none; border:none; color:var(--ios-blue); font-weight:500;">Reset Background</button>
-		</div>
-	</div>
-
-	<!-- ADMIN MODAL (Simplified) -->
-	<div id="adminModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('adminModal')" class="ios-header-btn" style="color: var(--ios-blue);">Back</button>
-			<span>Admin</span>
-			<div style="width: 60px;"></div>
-		</div>
-		<div style="padding: 15px; overflow-y:auto; flex:1;">
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-				<h4 style="margin:0;">Users</h4>
-				<button class="primary-btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="openModal('adminAddUserModal')">+ Add</button>
+			<div class="search-wrap">
+				<input type="text" id="contactSearch" class="input-glass" placeholder="Search people & groups…" oninput="handleSearch(this.value)" autocomplete="off">
+				<div id="searchResults" class="search-results glass" style="display:none"></div>
 			</div>
-			<div id="adminUserList" style="background:var(--ios-card); border-radius:12px; overflow:hidden; margin-bottom:20px; border: 1px solid var(--ios-border);"></div>
-			
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-				<h4 style="margin:0;">Groups</h4>
-				<button class="primary-btn" style="width: auto; padding: 6px 12px; font-size: 12px;" onclick="openModal('adminAddGroupModal')">+ Add</button>
+
+			<div id="recentChatsList" style="flex:1;overflow-y:auto;padding-bottom:4px"></div>
+
+			<div class="tab-bar">
+				<div class="tab active" id="tab-chats" onclick="showTab('chats')"><i data-lucide="message-circle"></i>Chats</div>
+				<div class="tab" id="tab-profile" onclick="showTab('profile')"><i data-lucide="user"></i>Profile</div>
+				<div class="tab" id="tab-settings" onclick="showTab('settings')"><i data-lucide="settings"></i>Settings</div>
+				<div class="tab" id="tab-admin" onclick="showTab('admin')" style="display:none"><i data-lucide="shield"></i>Admin</div>
 			</div>
-			<div id="adminRoomList" style="background:var(--ios-card); border-radius:12px; overflow:hidden; border: 1px solid var(--ios-border);"></div>
 		</div>
-	</div>
 
-	<!-- ADMIN USER MODAL -->
-	<div id="adminAddUserModal" class="modal">
-		<div class="ios-header" style="background: var(--ios-card); color: var(--ios-text); border-bottom: 1px solid var(--ios-border);">
-			<button onclick="closeModal('adminAddUserModal')" class="ios-header-btn" style="color: var(--ios-blue);">Cancel</button>
-			<span>Add User</span>
-			<button onclick="adminSaveNewUser()" class="ios-header-btn" style="color: var(--ios-blue);">Save</button>
-		</div>
-		<div style="padding:20px;">
-			<input type="text" id="addUserName" placeholder="Full Name">
-			<input type="email" id="addUserEmail" placeholder="Email">
-			<input type="password" id="addUserPass" placeholder="Password">
-			<input type="text" id="addUserPhone" placeholder="Phone">
-			<select id="addUserType"><option value="User">User</option><option value="Admin">Admin</option></select>
-		</div>
-	</div>
-
-	<!-- NAV BAR -->
-	<div id="navBar" class="ios-nav hidden">
-		<div class="nav-tab active" onclick="switchTab('dashScreen', this)">
-			<i data-lucide="message-circle"></i>
-			Chats
-		</div>
-		<div class="nav-tab" onclick="switchTab('settingsScreen', this)">
-			<i data-lucide="settings"></i>
-			Settings
-		</div>
-	</div>
-
-	<script>
-		// --- CONFIG & STATE ---
-		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7W2Wog8QfuYfGd4jPI-rPP-LUpRrckdR1A1pP20ZqXEysWfKfhPp-bHOTMRzNQ1rb/exec';
-		let user = null, partner = null, isRoom = false, allContacts = [], allRooms = [], chatInterval;
-		let pendingMedia = "", selectedMsgId = null;
-
-		async function api(p) {
-			const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(p) });
-			return await r.json();
-		}
-
-		// --- LOGIN ---
-		async function handleLogin(btn) {
-			btn.innerText = "Connecting...";
-			const res = await api({ action: "login", identifier: document.getElementById('idInput').value, password: document.getElementById('passInput').value });
-			
-			if(res.status === "success") {
-				user = res.user;
-				document.getElementById('loginScreen').classList.remove('active');
-				document.getElementById('navBar').classList.remove('hidden');
-				
-				if(user.type && user.type.trim() === "Admin") {
-					document.getElementById('adminMenu').classList.remove('hidden');
-				}
-				
-				if(user.bg) document.getElementById('chatBox').style.backgroundImage = `url(${user.bg})`;
-				if(user.theme) document.body.className = `theme-${user.theme}`;
-				
-				setupProfileUI();
-				await loadData();
-				switchTab('dashScreen', document.querySelectorAll('.nav-tab')[0]);
-				fetchRecentChats();
-				setInterval(fetchRecentChats, 10000);
-			} else {
-				alert("Invalid Login");
-				btn.innerText = "Continue";
-			}
-		}
-
-		async function loadData() {
-			const resC = await api({ action: "getProfiles" });
-			allContacts = resC.profiles || [];
-			const resR = await api({ action: "getRooms" });
-			allRooms = resR.rooms || [];
-			
-			document.getElementById('newChatContactList').innerHTML = allContacts.filter(u => u.name !== user.name).map(p => `
-				<div class="chat-list-item" onclick="closeModal('newChatModal'); startChat('${p.name}', false);">
-					<img src="${p.pfp || `https://ui-avatars.com/api/?name=${p.name}`}">
-					<div class="chat-info"><div class="chat-name">${p.name}</div></div>
-				</div>`).join('');
-		}
-
-		function switchTab(id, el) {
-			document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-			document.getElementById(id).classList.add('active');
-			if(el) {
-				document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
-				el.classList.add('active');
-			}
-			lucide.createIcons();
-		}
-
-		// --- RECENTS & GROUPS ---
-		async function fetchRecentChats() {
-			if(!document.getElementById('dashScreen').classList.contains('active')) return;
-			
-			const res = await api({ action: "getRecentChats", me: user.name });
-			const list = document.getElementById('recentChatsList');
-			
-			if(!res.recents || res.recents.length === 0) {
-				list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--ios-subtext);">No chats yet.<br>Tap + to start.</div>`;
-				return;
-			}
-
-			list.innerHTML = res.recents.map(r => {
-				let pfp;
-				if(r.isRoom) {
-					const rm = allRooms.find(x => x.name === r.partner);
-					pfp = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${r.partner}&background=random`;
-				} else {
-					const contact = allContacts.find(c => c.name === r.partner) || {};
-					pfp = contact.pfp || `https://ui-avatars.com/api/?name=${r.partner}`;
-				}
-				return `
-				<div class="chat-list-item" onclick="startChat('${r.partner}', ${r.isRoom})">
-					<img src="${pfp}">
-					<div class="chat-info">
-						<div class="chat-name-row">
-							<div class="chat-name">${r.partner}</div>
-							<div class="chat-time">${r.time}</div>
+		<!-- CHAT PANEL -->
+		<div id="chatPanel" class="panel glass">
+			<div id="noChatSelected" style="margin:auto;text-align:center;color:var(--sub);padding:20px">
+				<i data-lucide="message-square" style="width:52px;height:52px;display:block;margin:0 auto 12px"></i>
+				<p style="font-size:15px;margin:0">Select a chat to start messaging</p>
+			</div>
+			<div id="activeChat" style="display:none;flex-direction:column;height:100%">
+				<div class="header">
+					<div style="display:flex;align-items:center">
+						<button class="btn" style="margin-right:10px" onclick="closeChat()"><i data-lucide="chevron-left"></i></button>
+						<img id="chatHeaderPfp" class="avatar" style="width:38px;height:38px;margin-right:10px;cursor:pointer" onclick="openChatInfo()">
+						<div style="cursor:pointer" onclick="openChatInfo()">
+							<div id="chatHeaderName" style="font-weight:700;font-size:15px">Name</div>
+							<div id="chatHeaderSub" class="muted" style="font-size:11px">Online</div>
 						</div>
-						<div class="chat-preview">${r.lastMsg}</div>
 					</div>
-				</div>`;
-			}).join('');
-		}
-
-		function showGroupModal() {
-			const list = document.getElementById('groupSelectionList');
-			list.innerHTML = allContacts.filter(u => u.name !== user.name).map(u => `
-				<div class="chat-list-item" style="padding: 8px 0;">
-					<input type="checkbox" class="group-checkbox" value="${u.name}" style="width:20px; height:20px; margin-right:15px;">
-					<img src="${u.pfp || `https://ui-avatars.com/api/?name=${u.name}`}" style="width:40px; height:40px;">
-					<b>${u.name}</b>
-				</div>`).join('');
-			document.getElementById('groupModal').style.display = 'flex';
-		}
-
-		async function createGroupFinal() {
-			const name = document.getElementById('newGroupName').value;
-			const checked = Array.from(document.querySelectorAll('.group-checkbox:checked')).map(c => c.value);
-			checked.push(user.name);
-			if(!name || checked.length < 2) return alert("Enter name and select at least 1 person.");
-			
-			await api({ action: "addRoom", name: name, members: checked.join(',') });
-			closeModal('groupModal');
-			await loadData();
-			fetchRecentChats();
-			startChat(name, true);
-		}
-
-		// --- CHAT LOGIC ---
-		function startChat(name, isRm = false) {
-			partner = name;
-			isRoom = isRm;
-			document.getElementById('chatHeader').innerText = name;
-			
-			if(isRm) {
-				const rm = allRooms.find(x => x.name === name);
-				document.getElementById('chatHeaderPfp').src = (rm && rm.icon) ? rm.icon : `https://ui-avatars.com/api/?name=${name}&background=random`;
-			} else {
-				const contact = allContacts.find(c => c.name === name) || {};
-				document.getElementById('chatHeaderPfp').src = contact.pfp || `https://ui-avatars.com/api/?name=${name}`;
-			}
-
-			const callBtn = document.getElementById('callBtn');
-			callBtn.classList.remove('hidden');
-			
-			document.getElementById('chatScreen').style.display = 'flex';
-			loadMessages();
-			clearInterval(chatInterval);
-			chatInterval = setInterval(() => { if(!document.hidden) loadMessages(); }, 5000);
-		}
-
-		async function loadMessages() {
-			if(!partner) return;
-			const res = await api({ action: "getMessages", me: user.name, partner: partner, isRoom: isRoom });
-			const chatBox = document.getElementById('chatBox');
-			const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
-			
-			chatBox.innerHTML = (res.messages || []).map(m => {
-				let content = m.text;
-				// Media Handling
-				if (m.media.startsWith("data:audio")) content += `<br><audio controls src="${m.media}" style="height: 30px; margin-top: 4px;"></audio>`;
-				else if (m.media.startsWith("data:image")) content += `<br><img src="${m.media}" class="media">`;
-				
-				return `
-				<div class="msg ${m.sender === user.name ? 'sent' : 'received'}" 
-					 oncontextmenu="openMsgMenu(event, '${m.msgId}', '${m.sender}')">
-					${isRoom && m.sender !== user.name ? `<small style="font-weight:600; font-size:11px; color:var(--ios-blue); margin-bottom:2px;">${m.sender}</small>` : ''}
-					<div class="msg-content">${content}</div>
-					<div class="msg-meta">
-						${m.time} ${m.status==='edited'?'(edited)':''}
-						${m.sender === user.name ? '<i data-lucide="check" style="width:12px;"></i>' : ''}
+					<div style="display:flex;gap:6px">
+						<button class="btn" title="Voice Call" onclick="startCall('audio')"><i data-lucide="phone"></i></button>
+						<button class="btn" title="Video Call" onclick="startCall('video')"><i data-lucide="video"></i></button>
+						<button class="btn btn-danger btn-sm" title="Clear Chat" onclick="confirmClearChat()"><i data-lucide="trash-2"></i></button>
+						<button class="btn" onclick="toggleTheme()"><i data-lucide="sun"></i></button>
 					</div>
-				</div>`;
-			}).join('');
-			
-			if (isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
-			lucide.createIcons();
-		}
+				</div>
+				<div id="chatBox" class="messages"></div>
+				<div class="header" style="border-top:1px solid var(--glass-border);border-bottom:none;gap:8px">
+					<button class="btn" onclick="document.getElementById('mediaUpload').click()"><i data-lucide="paperclip"></i></button>
+					<input type="file" id="mediaUpload" style="display:none" onchange="attachMedia(this)">
+					<span id="mediaIndicator" style="display:none;font-size:12px;color:var(--prim);white-space:nowrap">📎 ready</span>
+					<input type="text" id="chatInput" class="input-glass" placeholder="Type a message…" style="flex:1;margin:0" onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMsg()">
+					<button class="btn btn-prim" onclick="sendMsg()"><i data-lucide="send"></i></button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 
-		async function sendMsg(overrideText = null) {
-			const inp = document.getElementById('chatInput');
-			const text = overrideText || inp.value.trim();
-			if(!text && !pendingMedia) return;
+<!-- JITSI -->
+<div id="callPanel">
+	<div class="call-header">
+		<span id="callTitle">Call</span>
+		<button class="btn btn-danger" onclick="endCall()"><i data-lucide="phone-off"></i> End Call</button>
+	</div>
+	<iframe id="jitsiFrame" allow="camera;microphone;fullscreen;display-capture"></iframe>
+</div>
 
-			await api({ action: "sendMessage", sender: user.name, receiver: partner, text: text, media: pendingMedia, isRoom: isRoom });
-			inp.value = "";
-			pendingMedia = "";
-			inp.placeholder = "Message";
-			loadMessages();
-		}
+<!-- CONTEXT MENU -->
+<div id="ctxMenu" class="ctx-menu glass" style="display:none">
+	<div class="ctx-item" id="ctxCopyBtn" onclick="ctxCopy()"><i data-lucide="copy"></i> Copy</div>
+	<div class="ctx-item" id="ctxEditBtn" onclick="ctxEdit()"><i data-lucide="pencil"></i> Edit</div>
+	<div class="ctx-sep"></div>
+	<div class="ctx-item danger" id="ctxDelBtn" onclick="ctxDelete()"><i data-lucide="trash-2"></i> Delete</div>
+</div>
 
-		// --- MEDIA & RECORDING ---
-		function attachMedia(input) {
-			if (!input.files[0]) return;
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				const img = new Image();
-				img.src = e.target.result;
-				img.onload = () => {
-					const canvas = document.createElement('canvas');
-					const scale = 400 / img.width;
-					canvas.width = 400;
-					canvas.height = img.height * scale;
-					const ctx = canvas.getContext('2d');
-					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-					pendingMedia = canvas.toDataURL('image/jpeg', 0.6);
-					document.getElementById('chatInput').placeholder = "Image attached...";
-				};
-			};
-			reader.readAsDataURL(input.files[0]);
-		}
+<!-- USER PROFILE VIEW MODAL -->
+<div id="userViewModal" class="modal-overlay">
+	<div class="modal-box glass" style="max-width:400px">
+		<div class="modal-header">
+			<h2>Profile</h2>
+			<div style="display:flex;gap:8px">
+				<button class="btn btn-prim btn-sm" id="viewMsgBtn" onclick="startChatFromView()"><i data-lucide="message-circle"></i> Message</button>
+				<button class="btn" onclick="closeOverlay('userViewModal')"><i data-lucide="x"></i></button>
+			</div>
+		</div>
+		<img id="viewPfp" src="" class="profile-card-avatar" onerror="this.src='https://ui-avatars.com/api/?name=U&background=007aff&color=fff'">
+		<div id="viewName" class="profile-card-name"></div>
+		<div id="viewStatus" class="profile-card-status"></div>
+		<div id="viewInfoRows"></div>
+	</div>
+</div>
 
-		let mediaRecorder, audioChunks = [];
-		async function startRecording() {
-			try {
-				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				mediaRecorder = new MediaRecorder(stream);
-				mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-				mediaRecorder.onstop = () => {
-					const r = new FileReader();
-					r.readAsDataURL(new Blob(audioChunks, { type: 'audio/webm' }));
-					r.onloadend = () => {
-						pendingMedia = r.result;
-						sendMsg("🎙️ Voice Note");
-					};
-					audioChunks = [];
-				};
-				mediaRecorder.start();
-				document.getElementById('chatControls').classList.add('recording-active');
-				drawVisualizer();
-			} catch(e) { alert("Mic denied."); }
-		}
-		function stopRecording() {
-			if(mediaRecorder && mediaRecorder.state === "recording") {
-				mediaRecorder.stop();
-				document.getElementById('chatControls').classList.remove('recording-active');
-			}
-		}
-		function drawVisualizer() {
-			const canvas = document.getElementById("visualizer");
-			const ctx = canvas.getContext("2d");
-			if(!document.getElementById('chatControls').classList.contains('recording-active')) {
-				ctx.clearRect(0,0,canvas.width,canvas.height); return;
-			}
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.fillStyle = "var(--ios-blue)";
-			for(let i=0; i<5; i++) {
-				let h = Math.random() * 20 + 5;
-				ctx.fillRect(i*20 + 10, 15 - h/2, 10, h);
-			}
-			requestAnimationFrame(drawVisualizer);
-		}
+<!-- GROUP SETTINGS MODAL -->
+<div id="groupSettingsModal" class="modal-overlay">
+	<div class="modal-box glass" style="max-width:480px">
+		<div class="modal-header">
+			<h2>Group Info</h2>
+			<button class="btn" onclick="closeOverlay('groupSettingsModal')"><i data-lucide="x"></i></button>
+		</div>
+		<!-- Banner -->
+		<div class="group-banner">
+			<div class="gi" id="gsIcon">👥</div>
+			<h3 id="gsName"></h3>
+			<p id="gsDesc" style="max-width:320px"></p>
+		</div>
+		<!-- Rules -->
+		<div id="gsRulesWrap" class="settings-section" style="margin-top:16px;display:none">
+			<h3>Rules</h3>
+			<div id="gsRules" style="font-size:13px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.06);line-height:1.6"></div>
+		</div>
+		<!-- Members -->
+		<div class="settings-section" style="margin-top:16px">
+			<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+				<h3 style="margin:0">Members</h3>
+				<button class="btn btn-sm btn-prim" id="gsAddMemberBtn" onclick="openAddMemberPicker()" style="display:none"><i data-lucide="user-plus"></i> Add</button>
+			</div>
+			<div id="gsMembersList"></div>
+		</div>
+		<!-- Admin: edit group -->
+		<div id="gsEditSection" style="display:none">
+			<div class="ctx-sep" style="margin:16px 0"></div>
+			<div class="settings-section">
+				<h3>Edit Group</h3>
+				<div class="form-group"><label>Icon (Emoji)</label><input type="text" id="gsEditIcon" class="input-glass" maxlength="4"></div>
+				<div class="form-group"><label>Description</label><input type="text" id="gsEditDesc" class="input-glass"></div>
+				<div class="form-group"><label>Rules</label><textarea id="gsEditRules" class="input-glass" rows="3"></textarea></div>
+				<button class="btn btn-prim" style="width:100%" onclick="saveGroupSettings()">Save Changes</button>
+			</div>
+			<button class="btn btn-danger" style="width:100%;margin-top:8px" onclick="deleteCurrentGroup()"><i data-lucide="trash-2"></i> Delete Group</button>
+		</div>
+	</div>
+</div>
 
-		// --- ADMIN & UTILS ---
-		async function openAdminConsole() {
-			const userList = document.getElementById('adminUserList');
-			const roomList = document.getElementById('adminRoomList');
-			userList.innerHTML = allContacts.map(c => `
-				<div class="settings-item">
-					<div><b>${c.name}</b><br><small class="muted">${c.type || 'User'}</small></div>
-					<div>
-						<i data-lucide="edit" style="color:var(--ios-blue); margin-right:15px; cursor:pointer;" onclick="adminOpenEditUser('${c.name}', '${c.email}', '${c.phone}', '${c.type}')"></i>
-						<i data-lucide="trash" style="color:#FF3B30; cursor:pointer;" onclick="adminDeleteUser('${c.name}')"></i>
+<!-- ADD MEMBER TO GROUP MODAL -->
+<div id="addMemberModal" class="modal-overlay" style="z-index:600">
+	<div class="modal-box glass" style="max-width:400px">
+		<div class="modal-header">
+			<h2>Add Members</h2>
+			<button class="btn" onclick="closeOverlay('addMemberModal')"><i data-lucide="x"></i></button>
+		</div>
+		<div class="form-group">
+			<input type="text" id="addMemberSearch" class="input-glass" placeholder="Search users…" oninput="renderAddMemberList(this.value)">
+		</div>
+		<div id="addMemberList" style="max-height:300px;overflow-y:auto"></div>
+		<button class="btn btn-prim" style="width:100%;margin-top:14px" onclick="confirmAddMembers()">Add Selected</button>
+	</div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profileModal" class="modal-overlay">
+	<div class="modal-box glass">
+		<div class="modal-header"><h2>My Profile</h2><button class="btn" onclick="closeOverlay('profileModal')"><i data-lucide="x"></i></button></div>
+		<div style="text-align:center;margin-bottom:24px">
+			<div class="avatar-upload-wrap">
+				<img id="profilePfpPreview" src="" onerror="this.src='https://ui-avatars.com/api/?name=Me&background=007aff&color=fff'">
+				<button class="avatar-upload-btn" onclick="document.getElementById('pfpFileInput').click()"><i data-lucide="camera"></i></button>
+				<input type="file" id="pfpFileInput" accept="image/*" style="display:none" onchange="handlePfpUpload(this)">
+			</div>
+			<button class="btn btn-danger btn-sm" style="margin:0 auto" onclick="deletePfp()"><i data-lucide="trash-2"></i> Remove Photo</button>
+		</div>
+		<div class="settings-section">
+			<h3>Profile Info</h3>
+			<div class="form-group"><label>Display Name</label><input type="text" id="profileNameInput" class="input-glass" placeholder="Your name"></div>
+			<div class="form-group"><label>Email</label><input type="email" id="profileEmailInput" class="input-glass" placeholder="your@email.com"></div>
+			<div class="form-group"><label>Phone</label><input type="text" id="profilePhoneInput" class="input-glass" placeholder="+1 234 567 8900"></div>
+			<div class="form-group"><label>Status</label><input type="text" id="profileStatusInput" class="input-glass" placeholder="What's on your mind?"></div>
+			<button class="btn btn-prim" style="width:100%" onclick="saveProfile()">Save Changes</button>
+		</div>
+		<div class="settings-section">
+			<h3>Change Password</h3>
+			<div class="form-group"><label>New Password</label><input type="password" id="newPassInput" class="input-glass" placeholder="New password"></div>
+			<div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassInput" class="input-glass" placeholder="Confirm new password"></div>
+			<button class="btn btn-prim" style="width:100%" onclick="changePassword()">Update Password</button>
+		</div>
+		<div class="settings-section">
+			<h3>Account</h3>
+			<button class="btn btn-danger" style="width:100%" onclick="location.reload()"><i data-lucide="log-out"></i> Log Out</button>
+		</div>
+	</div>
+</div>
+
+<!-- APP SETTINGS MODAL -->
+<div id="appSettingsModal" class="modal-overlay">
+	<div class="modal-box glass">
+		<div class="modal-header"><h2>Settings</h2><button class="btn" onclick="closeOverlay('appSettingsModal')"><i data-lucide="x"></i></button></div>
+		<div class="settings-section">
+			<h3>Appearance</h3>
+			<div class="settings-row">
+				<div><div class="settings-row-label">Dark Mode</div><div class="settings-row-sub">Switch to dark theme</div></div>
+				<label class="toggle"><input type="checkbox" id="darkModeToggle" onchange="applyThemeToggle(this)"><span class="toggle-slider"></span></label>
+			</div>
+		</div>
+		<div class="settings-section">
+			<h3>Notifications</h3>
+			<div class="settings-row">
+				<div><div class="settings-row-label">Message Notifications</div><div class="settings-row-sub">Get notified for new messages</div></div>
+				<label class="toggle"><input type="checkbox" id="notifToggle" checked><span class="toggle-slider"></span></label>
+			</div>
+			<div class="settings-row">
+				<div><div class="settings-row-label">Sound</div><div class="settings-row-sub">Play sound on new messages</div></div>
+				<label class="toggle"><input type="checkbox" id="soundToggle" checked><span class="toggle-slider"></span></label>
+			</div>
+		</div>
+		<div class="settings-section">
+			<h3>Privacy</h3>
+			<div class="settings-row">
+				<div><div class="settings-row-label">Read Receipts</div><div class="settings-row-sub">Show when you've read messages</div></div>
+				<label class="toggle"><input type="checkbox" id="readReceiptToggle" checked><span class="toggle-slider"></span></label>
+			</div>
+			<div class="settings-row">
+				<div><div class="settings-row-label">Online Status</div><div class="settings-row-sub">Show when you're online</div></div>
+				<label class="toggle"><input type="checkbox" id="onlineStatusToggle" checked><span class="toggle-slider"></span></label>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- NEW CHAT / GROUP MODAL -->
+<div id="newChatModal" class="modal-overlay">
+	<div class="modal-box glass">
+		<div class="modal-header"><h2>New Conversation</h2><button class="btn" onclick="closeOverlay('newChatModal')"><i data-lucide="x"></i></button></div>
+		<div class="admin-tabs">
+			<div class="admin-tab active" id="ncTab-direct" onclick="switchNewChatTab('direct')">Direct Message</div>
+			<div class="admin-tab" id="ncTab-group" onclick="switchNewChatTab('group')">Create Group</div>
+		</div>
+		<div id="newDirectTab">
+			<div class="form-group">
+				<label>Search User</label>
+				<input type="text" id="newChatSearch" class="input-glass" placeholder="Type a name or email…" oninput="searchNewChatUsers(this.value)">
+			</div>
+			<div id="newChatUserResults" style="margin-top:8px;max-height:260px;overflow-y:auto"></div>
+		</div>
+		<div id="newGroupTab" style="display:none">
+			<div class="form-group"><label>Group Name</label><input type="text" id="newGroupName" class="input-glass" placeholder="Group name"></div>
+			<div class="form-group"><label>Group Icon (Emoji)</label><input type="text" id="newGroupIcon" class="input-glass" placeholder="🚀" maxlength="4"></div>
+			<div class="form-group"><label>Description</label><input type="text" id="newGroupDesc" class="input-glass" placeholder="What's this group about?"></div>
+			<div class="form-group"><label>Rules</label><textarea id="newGroupRules" class="input-glass" rows="3" placeholder="Group rules…"></textarea></div>
+			<!-- Member Picker -->
+			<div class="form-group">
+				<label>Add Members</label>
+				<input type="text" id="newGroupMemberSearch" class="input-glass" placeholder="Search to add members…" oninput="renderNewGroupMemberPicker(this.value)">
+			</div>
+			<div id="newGroupMemberList" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+			<div id="newGroupSelectedWrap" style="display:none;margin-bottom:12px">
+				<div style="font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Selected Members</div>
+				<div id="newGroupSelectedChips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+			</div>
+			<div class="settings-section" style="margin-top:16px">
+				<h3>Permissions</h3>
+				<div class="settings-row"><div class="settings-row-label">Who can add members</div>
+					<select class="input-glass" id="permAddMembers" style="width:auto;padding:7px 10px"><option value="admins">Admins only</option><option value="all">Everyone</option></select></div>
+				<div class="settings-row" style="margin-top:8px"><div class="settings-row-label">Who can remove members</div>
+					<select class="input-glass" id="permRemoveMembers" style="width:auto;padding:7px 10px"><option value="admins">Admins only</option><option value="all">Everyone</option></select></div>
+				<div class="settings-row" style="margin-top:8px"><div class="settings-row-label">Who can send messages</div>
+					<select class="input-glass" id="permSendMessages" style="width:auto;padding:7px 10px"><option value="all">Everyone</option><option value="admins">Admins only</option></select></div>
+			</div>
+			<button class="btn btn-prim" style="width:100%;margin-top:12px" onclick="createGroup()"><i data-lucide="users"></i> Create Group</button>
+		</div>
+	</div>
+</div>
+
+<!-- ADMIN CONSOLE -->
+<div id="adminModal" class="modal-overlay">
+	<div class="modal-box glass" style="max-width:860px;width:95%;max-height:92vh">
+		<div class="modal-header"><h2>⚙️ Admin Console</h2><button class="btn" onclick="closeOverlay('adminModal')"><i data-lucide="x"></i></button></div>
+		<div class="admin-tabs">
+			<div class="admin-tab active" id="adminTab-users" onclick="switchAdminTab('users')">Users</div>
+			<div class="admin-tab" id="adminTab-groups" onclick="switchAdminTab('groups')">Groups</div>
+		</div>
+
+		<!-- USERS TAB -->
+		<div id="adminUsersPanel">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+				<input type="text" id="adminUserSearch" class="input-glass" style="max-width:260px;padding:9px 12px" placeholder="Search users…" oninput="renderAdminUsers()">
+				<button class="btn btn-prim btn-sm" onclick="openUserForm()"><i data-lucide="user-plus"></i> Add User</button>
+			</div>
+			<div id="adminUserFormWrap" style="display:none" class="form-card">
+				<h3 id="userFormTitle">Add User</h3>
+				<input type="hidden" id="editUserKey">
+				<div class="form-row">
+					<div class="form-group"><label>Name</label><input type="text" id="adminUserName" class="input-glass" placeholder="Full name"></div>
+					<div class="form-group"><label>Account (Email / Phone)</label><input type="text" id="adminUserAccount" class="input-glass" placeholder="Email or phone"></div>
+				</div>
+				<div class="form-row">
+					<div class="form-group"><label>Password</label><input type="password" id="adminUserPass" class="input-glass" placeholder="Password"></div>
+					<div class="form-group"><label>Job Title</label><input type="text" id="adminUserJob" class="input-glass" placeholder="Job title"></div>
+				</div>
+				<div class="form-row">
+					<div class="form-group"><label>Phone</label><input type="text" id="adminUserPhone" class="input-glass" placeholder="Phone number"></div>
+					<div class="form-group"><label>Role</label>
+						<select id="adminUserRole" class="input-glass"><option value="user">User</option><option value="admin">Admin</option></select>
 					</div>
-				</div>`).join('');
-			roomList.innerHTML = allRooms.map(r => `
-				<div class="settings-item">
-					<div><b>${r.name}</b><br><small class="muted">${r.members.split(',').length} members</small></div>
-					<div>
-						<i data-lucide="trash" style="color:#FF3B30; cursor:pointer;" onclick="adminDeleteRoom('${r.name}')"></i>
-					</div>
-				</div>`).join('');
-			lucide.createIcons();
-			openModal('adminModal');
-		}
+				</div>
+				<div style="display:flex;gap:8px;margin-top:4px">
+					<button class="btn btn-prim" onclick="saveUser()">Save</button>
+					<button class="btn" onclick="document.getElementById('adminUserFormWrap').style.display='none'">Cancel</button>
+				</div>
+			</div>
+			<div style="overflow-x:auto">
+				<table class="admin-table"><thead><tr><th>Name</th><th>Account</th><th>Job</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
+				<tbody id="adminUsersTbody"></tbody></table>
+			</div>
+		</div>
 
-		async function adminSaveNewUser() {
-			const n = document.getElementById('addUserName').value;
-			const e = document.getElementById('addUserEmail').value;
-			const p = document.getElementById('addUserPass').value;
-			const ph = document.getElementById('addUserPhone').value;
-			const t = document.getElementById('addUserType').value;
-			if(!n || !e || !p) return alert("Name, Email, and Password required.");
-			await api({ action: "addUser", name: n, email: e, password: p, phone: ph, type: t });
-			closeModal('adminAddUserModal'); alert("User Added"); await loadData(); openAdminConsole();
-		}
+		<!-- GROUPS TAB -->
+		<div id="adminGroupsPanel" style="display:none">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+				<input type="text" id="adminGroupSearch" class="input-glass" style="max-width:260px;padding:9px 12px" placeholder="Search groups…" oninput="renderAdminGroups()">
+				<button class="btn btn-prim btn-sm" onclick="openGroupForm()"><i data-lucide="plus"></i> Add Group</button>
+			</div>
+			<div id="adminGroupFormWrap" style="display:none" class="form-card">
+				<h3 id="groupFormTitle">Add Group</h3>
+				<input type="hidden" id="editGroupKey">
+				<div class="form-row">
+					<div class="form-group"><label>Group Name</label><input type="text" id="adminGroupName" class="input-glass" placeholder="Group name"></div>
+					<div class="form-group"><label>Icon (Emoji)</label><input type="text" id="adminGroupIcon" class="input-glass" placeholder="🚀" maxlength="4"></div>
+				</div>
+				<div class="form-group"><label>Description</label><input type="text" id="adminGroupDesc" class="input-glass" placeholder="Group description"></div>
+				<div class="form-group"><label>Rules</label><textarea id="adminGroupRules" class="input-glass" rows="2" placeholder="Group rules…"></textarea></div>
+				<div class="form-row">
+					<div class="form-group"><label>Who Can Add</label><select id="adminGroupPermAdd" class="input-glass"><option value="admins">Admins only</option><option value="all">Anyone</option></select></div>
+					<div class="form-group"><label>Who Can Remove</label><select id="adminGroupPermRemove" class="input-glass"><option value="admins">Admins only</option><option value="all">Anyone</option></select></div>
+				</div>
+				<div style="display:flex;gap:8px;margin-top:4px">
+					<button class="btn btn-prim" onclick="saveGroup()">Save</button>
+					<button class="btn" onclick="document.getElementById('adminGroupFormWrap').style.display='none'">Cancel</button>
+				</div>
+			</div>
+			<div style="overflow-x:auto">
+				<table class="admin-table"><thead><tr><th>Icon</th><th>Name</th><th>Members</th><th>Description</th><th>Actions</th></tr></thead>
+				<tbody id="adminGroupsTbody"></tbody></table>
+			</div>
+		</div>
+	</div>
+</div>
 
-		async function adminDeleteUser(name) {
-			if(confirm(`Delete user ${name}?`)) { await api({action: "deleteUser", name: name}); await loadData(); openAdminConsole(); }
-		}
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(0,0,0,0.82);color:#fff;padding:11px 24px;border-radius:24px;font-size:13px;font-weight:500;z-index:9999;transition:0.3s;pointer-events:none;backdrop-filter:blur(12px);opacity:0;white-space:nowrap"></div>
 
-		async function adminDeleteRoom(name) {
-			if(confirm(`Delete group ${name}?`)) { await api({action: "deleteRoom", name: name}); await loadData(); openAdminConsole(); }
-		}
+<script>
+// =================== CONFIG ===================
+// Replace this URL with your deployed Google Apps Script URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7UXsVbXsMcnM802jY1inzhVViIoUzdJOBeoBHVq-q9jCJnvWS_4BUhGJG1gkbMnD4/exec';
 
-		// --- PROFILE & THEMES ---
-		function setupProfileUI() {
-			document.getElementById('myNameDisplay').innerText = user.name;
-			document.getElementById('myStatusDisplay').innerText = user.status || "Hey there! I'm using iMind.";
-			document.getElementById('myPfpDisplay').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
-			document.getElementById('editName').value = user.name;
-			document.getElementById('editStatus').value = user.status || "";
-			document.getElementById('editPhone').value = user.phone || "";
-			document.getElementById('editPfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${user.name}`;
-		}
+// =================== STATE ===================
+let user = null, partner = null, isRoom = false, chatInterval = null;
+let pendingMedia = "";
+let allUsers = [], allGroups = [];
+let ctxMsgId = null, ctxMsgText = "", ctxMsgOwn = false;
+let searchTimer = null;
 
-		async function saveProfileChanges() {
-			const name = document.getElementById('editName').value;
-			const stat = document.getElementById('editStatus').value;
-			const ph = document.getElementById('editPhone').value;
-			const res = await api({ action: "updateProfile", oldEmail: user.email, name: name, status: stat, phone: ph, pfp: user.pfp });
-			if(res.status === "success") { user = res.user; setupProfileUI(); closeModal('editProfileModal'); }
-		}
+// =================== API ===================
+async function api(payload) {
+	try {
+		const r = await fetch(SCRIPT_URL, {
+			method: 'POST',
+			body: JSON.stringify(payload),
+			headers: { 'Content-Type': 'text/plain' }
+		});
+		return await r.json();
+	} catch(e) {
+		console.error('API error:', e);
+		return { status: 'error', message: e.message };
+	}
+}
 
-		function uploadFile(input, type) {
-			if (!input.files[0]) return;
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				const img = new Image();
-				img.src = e.target.result;
-				img.onload = () => {
-					const canvas = document.createElement('canvas');
-					const scale = (type==='pfp'?200:600) / img.width;
-					canvas.width = (type==='pfp'?200:600);
-					canvas.height = img.height * scale;
-					const ctx = canvas.getContext('2d');
-					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-					const b64 = canvas.toDataURL('image/jpeg', 0.6);
-					if(type === 'pfp') { user.pfp = b64; document.getElementById('editPfpPreview').src = b64; }
-					if(type === 'bg') { user.bg = b64; document.getElementById('chatBox').style.backgroundImage = `url(${b64})`; api({ action: "updateProfile", oldEmail: user.email, bg: b64 }); }
-				};
-			};
-			reader.readAsDataURL(input.files[0]);
-		}
+// =================== TOAST ===================
+function toast(msg, ms = 2600) {
+	const el = document.getElementById('toast');
+	el.textContent = msg;
+	el.style.opacity = '1';
+	el.style.transform = 'translateX(-50%) translateY(0)';
+	clearTimeout(el._t);
+	el._t = setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(60px)'; }, ms);
+}
 
-		function clearBg() { user.bg = ""; document.getElementById('chatBox').style.backgroundImage = "none"; api({ action: "updateProfile", oldEmail: user.email, bg: "" }); }
-		function setTheme(t) { document.body.className = `theme-${t}`; api({ action: "updateProfile", oldEmail: user.email, theme: t }); }
+function esc(s) {
+	return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-		// --- MODALS & MENUS ---
-		function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-		function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-		function closeChat() { document.getElementById('chatScreen').style.display = 'none'; partner = null; clearInterval(chatInterval); fetchRecentChats(); }
-		
-		function openMsgMenu(e, id, sender) { e.preventDefault(); if (sender !== user.name && user.type.trim() !== "Admin") return; selectedMsgId = id; document.getElementById('msgActionMenu').style.display = 'block'; }
-		function closeMsgMenu() { document.getElementById('msgActionMenu').style.display = 'none'; selectedMsgId = null; }
-		
-		async function editSelectedMsg() {
-			closeMsgMenu(); const t = prompt("Edit message:"); if(t) { await api({ action: "editMessage", msgId: selectedMsgId, newText: t, receiver: partner, isRoom: isRoom }); loadMessages(); }
-		}
-		async function deleteSelectedMsg() {
-			closeMsgMenu(); if(confirm("Delete for everyone?")) { await api({ action: "deleteMessage", msgId: selectedMsgId, receiver: partner, isRoom: isRoom }); loadMessages(); }
-		}
+// =================== AUTH ===================
+async function handleLogin() {
+	const btn = document.getElementById('loginBtn');
+	const errEl = document.getElementById('loginErr');
+	btn.textContent = 'Connecting…'; btn.disabled = true;
+	errEl.style.display = 'none';
 
-		function viewPartnerProfile() {
-			// Simplified profile view (reuse logic from original but cleaner UI)
-			const overlay = document.createElement('div');
-			overlay.className = "modal";
-			overlay.style.display = "flex";
-			overlay.style.background = "var(--ios-bg)";
-			
-			let content = '';
-			if(isRoom) {
-				const rm = allRooms.find(x => x.name === partner) || {name: partner, members: ""};
-				content = `
-					<div class="ios-header" style="background:var(--ios-card); color:var(--ios-text); border-bottom:1px solid var(--ios-border);">
-						<button onclick="this.parentElement.parentElement.remove()" style="color:var(--ios-blue); background:none; border:none; font-size:16px;">Back</button>
-						<span>Group Info</span>
-						<div style="width:60px;"></div>
-					</div>
-					<div style="text-align:center; padding:30px 20px; background:var(--ios-card);">
-						<img src="${rm.icon || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-						<h2 style="margin:0;">${partner}</h2>
-						<p class="muted">${rm.members.split(',').length} participants</p>
-					</div>
-					<div class="settings-group">
-						<div class="settings-item" onclick="clearCurrentChat()"><span style="color:#FF3B30; width:100%; text-align:center;">Clear History</span></div>
-					</div>`;
-			} else {
-				const contact = allContacts.find(c => c.name === partner) || { name: partner, status: "Available", phone: "" };
-				content = `
-					<div class="ios-header" style="background:var(--ios-card); color:var(--ios-text); border-bottom:1px solid var(--ios-border);">
-						<button onclick="this.parentElement.parentElement.remove()" style="color:var(--ios-blue); background:none; border:none; font-size:16px;">Back</button>
-						<span>Contact</span>
-						<div style="width:60px;"></div>
-					</div>
-					<div style="text-align:center; padding:30px 20px; background:var(--ios-card);">
-						<img src="${contact.pfp || 'https://via.placeholder.com/120'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; margin-bottom:15px;">
-						<h2 style="margin:0;">${partner}</h2>
-						<p class="muted">${contact.status}</p>
-					</div>
-					<div class="settings-group">
-						<div class="settings-item" onclick="clearCurrentChat()"><span style="color:#FF3B30; width:100%; text-align:center;">Clear History</span></div>
-					</div>`;
-			}
-			overlay.innerHTML = content;
-			document.body.appendChild(overlay);
-		}
+	const res = await api({
+		action: 'login',
+		identifier: document.getElementById('idInput').value.trim(),
+		password: document.getElementById('passInput').value
+	});
 
-		async function clearCurrentChat() {
-			if(confirm("Erase all messages permanently?")) {
-				await api({ action: "clearChat", me: user.name, partner: partner, isRoom: isRoom });
-				document.querySelectorAll('.modal').forEach(m => { if(m.id !== 'chatScreen') m.remove(); });
-				loadMessages();
-			}
-		}
-
-		// Initialize Icons
+	if (res.status === 'success') {
+		user = res.user;
+		document.getElementById('loginScreen').classList.remove('active');
+		document.getElementById('mainApp').style.display = 'flex';
+		if (user.theme === 'dark') { document.body.classList.add('theme-dark'); document.getElementById('darkModeToggle').checked = true; }
+		// accounts col A is "Account Type" — admin check
+		if ((user.type||'').toLowerCase() === 'admin') document.getElementById('tab-admin').style.display = 'flex';
+		updateMyThumb();
+		fetchRecentChats();
+		// Pre-load profiles for search
+		api({ action: 'getProfiles' }).then(r => { allUsers = r.profiles || []; });
+		api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; });
+		setInterval(fetchRecentChats, 10000);
 		lucide.createIcons();
-	</script>
+	} else {
+		errEl.style.display = 'block';
+		btn.textContent = 'Continue'; btn.disabled = false;
+	}
+}
+
+function updateMyThumb() {
+	const src = user.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+	document.getElementById('myPfpThumb').src = src;
+}
+
+// =================== RECENT CHATS ===================
+async function fetchRecentChats() {
+	if (!user) return;
+	const res = await api({ action: 'getRecentChats', me: user.name });
+	const list = document.getElementById('recentChatsList');
+	const recents = res.recents || [];
+	if (!recents.length) {
+		list.innerHTML = '<div class="no-results">No chats yet — start a new conversation!</div>';
+		return;
+	}
+	list.innerHTML = recents.map(r => {
+		const iconHTML = r.isRoom
+			? `<div class="group-icon">${esc(r.icon||'👥')}</div>`
+			: `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.partner)}&background=007aff&color=fff" class="avatar">`;
+		return `<div class="row" onclick="startChat('${esc(r.partner)}',${!!r.isRoom})">
+			${iconHTML}
+			<div style="flex:1;overflow:hidden;min-width:0">
+				<div style="display:flex;justify-content:space-between;align-items:center">
+					<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.partner)}</span>
+					<small class="muted" style="flex-shrink:0;margin-left:6px;font-size:11px">${esc(r.time||'')}</small>
+				</div>
+				<div class="muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.lastMsg||'')}</div>
+			</div>
+		</div>`;
+	}).join('');
+}
+
+// =================== SEARCH ===================
+// Search works by filtering the already-loaded allUsers + allGroups lists.
+// These are loaded on login via getProfiles and getRooms.
+function handleSearch(val) {
+	const box = document.getElementById('searchResults');
+	clearTimeout(searchTimer);
+	if (!val.trim()) { box.style.display = 'none'; return; }
+	searchTimer = setTimeout(() => {
+		const q = val.toLowerCase();
+		const matched = [];
+		const seen = new Set();
+		allUsers.forEach(p => {
+			const n = (p.name||'').toLowerCase();
+			const e = (p.email||'').toLowerCase();
+			if (n.includes(q) || e.includes(q)) {
+				if (!seen.has(p.name)) { seen.add(p.name); matched.push({ name: p.name, type: 'user', sub: p.status||p.job||'User' }); }
+			}
+		});
+		allGroups.forEach(g => {
+			const n = (g.name||'').toLowerCase();
+			if (n.includes(q)) {
+				if (!seen.has(g.name)) { seen.add(g.name); matched.push({ name: g.name, type: 'group', sub: 'Group', icon: g.icon }); }
+			}
+		});
+		if (!matched.length) { box.style.display = 'block'; box.innerHTML = '<div class="no-results">No results found</div>'; return; }
+		box.style.display = 'block';
+		box.innerHTML = matched.map(m => {
+			const ico = m.type === 'group'
+				? `<div class="group-icon" style="width:36px;height:36px;font-size:16px;margin:0">${esc(m.icon||'👥')}</div>`
+				: `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=007aff&color=fff" style="width:36px;height:36px;border-radius:50%;object-fit:cover">`;
+			return `<div class="search-result-item" onclick="startChatFromSearch('${esc(m.name)}',${m.type==='group'})">
+				${ico}
+				<div>
+					<div style="font-weight:600;font-size:14px">${esc(m.name)}</div>
+					<div style="font-size:11px;color:var(--sub)">${esc(m.sub)}</div>
+				</div>
+			</div>`;
+		}).join('');
+	}, 250);
+}
+
+function startChatFromSearch(name, isGrp) {
+	document.getElementById('contactSearch').value = '';
+	document.getElementById('searchResults').style.display = 'none';
+	startChat(name, isGrp);
+}
+
+document.addEventListener('click', e => {
+	if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').style.display = 'none';
+	if (!e.target.closest('#ctxMenu')) document.getElementById('ctxMenu').style.display = 'none';
+});
+
+// =================== CHAT ===================
+function startChat(name, isRm) {
+	partner = name; isRoom = !!isRm;
+	document.getElementById('noChatSelected').style.display = 'none';
+	document.getElementById('activeChat').style.display = 'flex';
+	document.getElementById('chatPanel').classList.add('active');
+	document.getElementById('chatHeaderName').textContent = name;
+	document.getElementById('chatHeaderPfp').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
+	document.getElementById('chatHeaderSub').textContent = isRoom ? 'Group' : 'Online';
+	clearInterval(chatInterval);
+	loadMessages();
+	chatInterval = setInterval(loadMessages, 5000);
+}
+
+async function loadMessages() {
+	if (!partner) return;
+	const res = await api({ action: 'getMessages', me: user.name, partner, isRoom });
+	const box = document.getElementById('chatBox');
+	const msgs = res.messages || [];
+	const wasBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+	if (!msgs.length) { box.innerHTML = '<div class="no-results" style="margin:auto">No messages yet 👋</div>'; return; }
+	box.innerHTML = msgs.map(m => {
+		const own = m.sender === user.name;
+		const deleted = m.status === 'deleted';
+		const edited = m.status === 'edited';
+		return `<div class="bubble ${own?'out':'in'}" 
+			data-id="${esc(m.msgId)}" 
+			data-text="${esc(m.text)}" 
+			data-own="${own}" 
+			oncontextmenu="showCtx(event,this)">
+			${isRoom && !own ? `<div style="font-size:11px;font-weight:700;color:var(--prim);margin-bottom:4px;cursor:pointer" onclick="openUserView('${esc(m.sender)}')">${esc(m.sender)}</div>` : ''}
+			${m.media ? `<img src="${esc(m.media)}" style="max-width:200px;border-radius:10px;margin-bottom:6px;display:block" onerror="this.style.display='none'">` : ''}
+			<div>${deleted ? '<span style="opacity:0.5;font-style:italic">🚫 Message deleted</span>' : esc(m.text||'')}</div>
+			<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:4px">
+				${edited&&!deleted ? '<span style="font-size:9px;color:var(--sub)">edited</span>' : ''}
+				<span class="muted" style="font-size:10px">${esc(m.time||'')}</span>
+			</div>
+		</div>`;
+	}).join('');
+	if (wasBottom) box.scrollTop = box.scrollHeight;
+}
+
+async function sendMsg() {
+	const inp = document.getElementById('chatInput');
+	const text = inp.value.trim();
+	if (!text && !pendingMedia) return;
+	inp.value = '';
+	const media = pendingMedia; pendingMedia = '';
+	document.getElementById('mediaIndicator').style.display = 'none';
+	await api({ action: 'sendMessage', sender: user.name, receiver: partner, text, media, isRoom });
+	loadMessages();
+}
+
+function attachMedia(input) {
+	const file = input.files[0]; if (!file) return;
+	const reader = new FileReader();
+	reader.onload = e => {
+		pendingMedia = e.target.result;
+		document.getElementById('mediaIndicator').style.display = 'inline';
+		toast('Media attached ✓');
+	};
+	reader.readAsDataURL(file);
+}
+
+function closeChat() {
+	clearInterval(chatInterval); partner = null;
+	document.getElementById('chatPanel').classList.remove('active');
+	document.getElementById('activeChat').style.display = 'none';
+	document.getElementById('noChatSelected').style.display = 'block';
+}
+
+// =================== CONTEXT MENU ===================
+function showCtx(e, el) {
+	e.preventDefault();
+	ctxMsgId = el.dataset.id; ctxMsgText = el.dataset.text; ctxMsgOwn = el.dataset.own === 'true';
+	const menu = document.getElementById('ctxMenu');
+	document.getElementById('ctxEditBtn').style.display = ctxMsgOwn ? 'flex' : 'none';
+	document.getElementById('ctxDelBtn').style.display = ctxMsgOwn ? 'flex' : 'none';
+	menu.style.display = 'block';
+	menu.style.left = Math.min(e.clientX, window.innerWidth - 175) + 'px';
+	menu.style.top  = Math.min(e.clientY, window.innerHeight - 130) + 'px';
+	lucide.createIcons();
+}
+
+function ctxCopy() {
+	navigator.clipboard.writeText(ctxMsgText||'').catch(()=>{});
+	toast('Copied ✓');
+}
+
+function ctxEdit() {
+	const newText = prompt('Edit message:', ctxMsgText);
+	if (newText === null || newText.trim() === ctxMsgText) return;
+	api({ action: 'editMessage', msgId: ctxMsgId, newText: newText.trim(), receiver: partner, isRoom }).then(loadMessages);
+}
+
+function ctxDelete() {
+	if (!confirm('Delete this message for everyone?')) return;
+	api({ action: 'deleteMessage', msgId: ctxMsgId, receiver: partner, isRoom }).then(loadMessages);
+}
+
+function confirmClearChat() {
+	if (!partner || !confirm(`Clear all messages with ${partner}? This cannot be undone.`)) return;
+	api({ action: 'clearChat', me: user.name, partner, isRoom }).then(() => { toast('Chat cleared'); loadMessages(); });
+}
+
+// =================== CALLS ===================
+function startCall(type) {
+	if (!partner) { toast('No chat selected'); return; }
+	const room = 'imindpro-' + [user.name, partner].sort().join('-').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'');
+	document.getElementById('jitsiFrame').src =
+		`https://meet.jit.si/${room}#userInfo.displayName="${encodeURIComponent(user.name)}"&config.startWithVideoMuted=${type==='audio'}&config.startWithAudioMuted=false`;
+	document.getElementById('callTitle').textContent = (type==='audio'?'📞':'📹') + ' Call with ' + partner;
+	document.getElementById('callPanel').classList.add('active');
+}
+
+function endCall() {
+	document.getElementById('callPanel').classList.remove('active');
+	document.getElementById('jitsiFrame').src = '';
+}
+
+// =================== NEW CHAT ===================
+function openNewChatModal() {
+	document.getElementById('newChatSearch').value = '';
+	// Reset group member picker
+	newGroupSelected = new Set();
+	document.getElementById('newGroupSelectedWrap').style.display = 'none';
+	document.getElementById('newGroupMemberSearch').value = '';
+	document.getElementById('newGroupMemberList').innerHTML = '';
+	searchNewChatUsers('');
+	openOverlay('newChatModal');
+}
+
+function switchNewChatTab(tab) {
+	document.getElementById('newDirectTab').style.display = tab === 'direct' ? 'block' : 'none';
+	document.getElementById('newGroupTab').style.display = tab === 'group' ? 'block' : 'none';
+	document.getElementById('ncTab-direct').classList.toggle('active', tab === 'direct');
+	document.getElementById('ncTab-group').classList.toggle('active', tab === 'group');
+	// Load member picker when switching to group tab
+	if (tab === 'group') renderNewGroupMemberPicker('');
+}
+
+function searchNewChatUsers(val) {
+	const container = document.getElementById('newChatUserResults');
+	const q = val.toLowerCase();
+	const list = allUsers.filter(p => p.name !== user.name && (!q || (p.name||'').toLowerCase().includes(q) || (p.email||'').toLowerCase().includes(q)));
+	if (!list.length) { container.innerHTML = '<div class="no-results">No users found</div>'; return; }
+	container.innerHTML = list.map(u => `
+		<div class="row" onclick="startDirectChat('${esc(u.name)}')">
+			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff" class="avatar" style="width:40px;height:40px">
+			<div>
+				<div style="font-weight:600">${esc(u.name)}</div>
+				<div class="muted" style="font-size:12px">${esc(u.status||u.job||'')}</div>
+			</div>
+		</div>`).join('');
+}
+
+function startDirectChat(name) { closeOverlay('newChatModal'); startChat(name, false); }
+
+async function createGroup() {
+	const name = document.getElementById('newGroupName').value.trim();
+	if (!name) { toast('Please enter a group name'); return; }
+	const icon  = document.getElementById('newGroupIcon').value.trim() || '👥';
+	const desc  = document.getElementById('newGroupDesc').value.trim();
+	const rules = document.getElementById('newGroupRules').value.trim();
+	// Creator is always first in members list
+	const members = [user.name, ...[...newGroupSelected]].join(',');
+	const res = await api({ action: 'addRoom', name, members, icon, description: desc, rules });
+	if (res.status === 'success') {
+		toast('Group created! 🎉');
+		newGroupSelected = new Set();
+		closeOverlay('newChatModal');
+		allGroups = []; api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; });
+		fetchRecentChats();
+	} else { toast('Failed to create group: ' + (res.message||'')); }
+}
+
+// =================== PROFILE ===================
+function openProfilePanel() {
+	document.getElementById('profilePfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+	document.getElementById('profileNameInput').value = user.name || '';
+	document.getElementById('profileEmailInput').value = user.email || '';
+	document.getElementById('profilePhoneInput').value = user.phone || '';
+	document.getElementById('profileStatusInput').value = user.status || '';
+	openOverlay('profileModal');
+}
+
+function handlePfpUpload(input) {
+	const file = input.files[0]; if (!file) return;
+	const reader = new FileReader();
+	reader.onload = e => {
+		user.pfp = e.target.result;
+		document.getElementById('profilePfpPreview').src = e.target.result;
+		updateMyThumb();
+		toast('Photo ready — Save Changes to apply');
+	};
+	reader.readAsDataURL(file);
+}
+
+function deletePfp() {
+	user.pfp = '';
+	const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+	document.getElementById('profilePfpPreview').src = fb;
+	updateMyThumb();
+	toast('Profile photo removed');
+}
+
+async function saveProfile() {
+	const name = document.getElementById('profileNameInput').value.trim();
+	if (!name) { toast('Name cannot be empty'); return; }
+	const email = document.getElementById('profileEmailInput').value.trim();
+	const phone = document.getElementById('profilePhoneInput').value.trim();
+	const status = document.getElementById('profileStatusInput').value.trim();
+	// GAS updateProfile matches by oldEmail (the current account/email field)
+	await api({ action: 'updateProfile', oldEmail: user.email, name, email, phone, status, pfp: user.pfp||'' });
+	user.name = name; user.email = email; user.phone = phone; user.status = status;
+	updateMyThumb();
+	toast('Profile saved ✓');
+}
+
+async function changePassword() {
+	const np = document.getElementById('newPassInput').value;
+	const cp = document.getElementById('confirmPassInput').value;
+	if (!np) { toast('Enter a new password'); return; }
+	if (np !== cp) { toast("Passwords don't match"); return; }
+	if (np.length < 6) { toast('Password must be at least 6 characters'); return; }
+	await api({ action: 'updateProfile', oldEmail: user.email, password: np });
+	toast('Password updated ✓');
+	document.getElementById('newPassInput').value = '';
+	document.getElementById('confirmPassInput').value = '';
+}
+
+// =================== ADMIN – USERS ===================
+async function loadAdminUsers() {
+	const res = await api({ action: 'getProfiles' });
+	// getProfiles returns: name, email, job, phone, lastSeen, status, pfp
+	allUsers = res.profiles || [];
+	renderAdminUsers();
+}
+
+function renderAdminUsers() {
+	const q = (document.getElementById('adminUserSearch').value||'').toLowerCase();
+	const list = allUsers.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+	const tbody = document.getElementById('adminUsersTbody');
+	if (!list.length) { tbody.innerHTML = `<tr><td colspan="6" class="no-results">No users found</td></tr>`; return; }
+	tbody.innerHTML = list.map((u, i) => `<tr>
+		<td><div style="display:flex;align-items:center;gap:8px">
+			<img src="${esc(u.pfp)||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff`}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff'">
+			<span style="font-weight:600">${esc(u.name)}</span>
+		</div></td>
+		<td class="muted" style="font-size:12px">${esc(u.email||'')}</td>
+		<td class="muted" style="font-size:12px">${esc(u.job||'')}</td>
+		<td class="muted" style="font-size:12px">${esc(u.phone||'')}</td>
+		<td><span class="badge badge-user">user</span></td>
+		<td><div style="display:flex;gap:6px">
+			<button class="btn btn-sm" onclick='editUserRow(${i})'><i data-lucide="pencil"></i></button>
+			<button class="btn btn-sm btn-danger" onclick='deleteUserRow("${esc(u.name)}", "${esc(u.email)}")'><i data-lucide="trash-2"></i></button>
+		</div></td>
+	</tr>`).join('');
+	lucide.createIcons();
+}
+
+function openUserForm(prefill) {
+	const wrap = document.getElementById('adminUserFormWrap');
+	wrap.style.display = 'block';
+	document.getElementById('userFormTitle').textContent = prefill ? 'Edit User' : 'Add User';
+	document.getElementById('editUserKey').value = prefill ? (prefill.email||prefill.name) : '';
+	document.getElementById('adminUserName').value = prefill ? (prefill.name||'') : '';
+	document.getElementById('adminUserAccount').value = prefill ? (prefill.email||'') : '';
+	document.getElementById('adminUserPass').value = '';
+	document.getElementById('adminUserJob').value = prefill ? (prefill.job||'') : '';
+	document.getElementById('adminUserPhone').value = prefill ? (prefill.phone||'') : '';
+	document.getElementById('adminUserRole').value = 'user';
+	wrap.scrollIntoView({ behavior:'smooth' });
+}
+
+function editUserRow(i) {
+	const q = (document.getElementById('adminUserSearch').value||'').toLowerCase();
+	const list = allUsers.filter(u => (u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q));
+	openUserForm(list[i]);
+}
+
+async function saveUser() {
+	const name = document.getElementById('adminUserName').value.trim();
+	const account = document.getElementById('adminUserAccount').value.trim();
+	if (!name || !account) { toast('Name and account required'); return; }
+	const pass = document.getElementById('adminUserPass').value;
+	const job = document.getElementById('adminUserJob').value.trim();
+	const phone = document.getElementById('adminUserPhone').value.trim();
+	const oldKey = document.getElementById('editUserKey').value;
+
+	if (oldKey) {
+		// Update: use updateProfile with oldEmail
+		await api({ action: 'updateProfile', oldEmail: oldKey, name, email: account, phone, job, ...(pass ? { password: pass } : {}) });
+		const idx = allUsers.findIndex(u => (u.email||u.name) === oldKey);
+		if (idx > -1) Object.assign(allUsers[idx], { name, email: account, phone, job });
+		toast('User updated ✓');
+	} else {
+		// Add: new GAS action adminAddUser
+		await api({ action: 'adminAddUser', name, account, password: pass, job, phone, role: document.getElementById('adminUserRole').value });
+		allUsers.push({ name, email: account, job, phone });
+		toast('User added ✓');
+	}
+	document.getElementById('adminUserFormWrap').style.display = 'none';
+	renderAdminUsers();
+}
+
+async function deleteUserRow(name, email) {
+	if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+	await api({ action: 'deleteUser', name });
+	allUsers = allUsers.filter(u => u.name !== name);
+	renderAdminUsers();
+	toast('User deleted');
+}
+
+// =================== ADMIN – GROUPS ===================
+async function loadAdminGroups() {
+	const res = await api({ action: 'getRooms' });
+	allGroups = res.rooms || [];
+	renderAdminGroups();
+}
+
+function renderAdminGroups() {
+	const q = (document.getElementById('adminGroupSearch').value||'').toLowerCase();
+	const list = allGroups.filter(g => (g.name||'').toLowerCase().includes(q));
+	const tbody = document.getElementById('adminGroupsTbody');
+	if (!list.length) { tbody.innerHTML = `<tr><td colspan="5" class="no-results">No groups found</td></tr>`; return; }
+	tbody.innerHTML = list.map((g, i) => `<tr>
+		<td><div class="group-icon" style="width:38px;height:38px;font-size:18px;margin:0">${esc(g.icon||'👥')}</div></td>
+		<td style="font-weight:600">${esc(g.name)}</td>
+		<td class="muted" style="font-size:12px">${esc((g.members||'').toString())}</td>
+		<td class="muted" style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.description||'—')}</td>
+		<td><div style="display:flex;gap:6px">
+			<button class="btn btn-sm" onclick='editGroupRow(${i})'><i data-lucide="pencil"></i></button>
+			<button class="btn btn-sm btn-danger" onclick='deleteGroupRow("${esc(g.name)}")'><i data-lucide="trash-2"></i></button>
+		</div></td>
+	</tr>`).join('');
+	lucide.createIcons();
+}
+
+function openGroupForm(prefill) {
+	const wrap = document.getElementById('adminGroupFormWrap');
+	wrap.style.display = 'block';
+	document.getElementById('groupFormTitle').textContent = prefill ? 'Edit Group' : 'Add Group';
+	document.getElementById('editGroupKey').value = prefill ? prefill.name : '';
+	document.getElementById('adminGroupName').value = prefill ? (prefill.name||'') : '';
+	document.getElementById('adminGroupIcon').value = prefill ? (prefill.icon||'') : '';
+	document.getElementById('adminGroupDesc').value = prefill ? (prefill.description||'') : '';
+	document.getElementById('adminGroupRules').value = prefill ? (prefill.rules||'') : '';
+	document.getElementById('adminGroupPermAdd').value = 'admins';
+	document.getElementById('adminGroupPermRemove').value = 'admins';
+	wrap.scrollIntoView({ behavior:'smooth' });
+}
+
+function editGroupRow(i) {
+	const q = (document.getElementById('adminGroupSearch').value||'').toLowerCase();
+	const list = allGroups.filter(g => (g.name||'').toLowerCase().includes(q));
+	openGroupForm(list[i]);
+}
+
+async function saveGroup() {
+	const name = document.getElementById('adminGroupName').value.trim();
+	if (!name) { toast('Group name required'); return; }
+	const icon = document.getElementById('adminGroupIcon').value.trim() || '👥';
+	const description = document.getElementById('adminGroupDesc').value.trim();
+	const rules = document.getElementById('adminGroupRules').value.trim();
+	const oldKey = document.getElementById('editGroupKey').value;
+
+	if (oldKey) {
+		await api({ action: 'updateRoomProfile', name: oldKey, icon, description, rules });
+		const idx = allGroups.findIndex(g => g.name === oldKey);
+		if (idx > -1) Object.assign(allGroups[idx], { icon, description, rules });
+		toast('Group updated ✓');
+	} else {
+		await api({ action: 'addRoom', name, members: user.name, icon, description, rules });
+		allGroups.push({ name, icon, description, rules, members: user.name });
+		toast('Group added ✓');
+	}
+	document.getElementById('adminGroupFormWrap').style.display = 'none';
+	renderAdminGroups();
+}
+
+async function deleteGroupRow(name) {
+	if (!confirm(`Delete group "${name}"?`)) return;
+	await api({ action: 'deleteRoom', name });
+	allGroups = allGroups.filter(g => g.name !== name);
+	renderAdminGroups();
+	toast('Group deleted');
+}
+
+// =================== UI UTILS ===================
+function toggleTheme() {
+	document.body.classList.toggle('theme-dark');
+	const dark = document.body.classList.contains('theme-dark');
+	document.getElementById('darkModeToggle').checked = dark;
+	if (user) api({ action: 'updateProfile', oldEmail: user.email, theme: dark ? 'dark' : 'light' });
+}
+
+function applyThemeToggle(cb) { document.body.classList.toggle('theme-dark', cb.checked); }
+
+function showTab(sec) {
+	['chats','profile','settings','admin'].forEach(s => document.getElementById('tab-'+s)?.classList.remove('active'));
+	document.getElementById('tab-'+sec)?.classList.add('active');
+	if (sec === 'profile') openProfilePanel();
+	else if (sec === 'settings') openOverlay('appSettingsModal');
+	else if (sec === 'admin') { openOverlay('adminModal'); loadAdminUsers(); }
+}
+
+function switchAdminTab(tab) {
+	document.getElementById('adminUsersPanel').style.display = tab === 'users' ? 'block' : 'none';
+	document.getElementById('adminGroupsPanel').style.display = tab === 'groups' ? 'block' : 'none';
+	document.getElementById('adminTab-users').classList.toggle('active', tab === 'users');
+	document.getElementById('adminTab-groups').classList.toggle('active', tab === 'groups');
+	if (tab === 'users') loadAdminUsers();
+	if (tab === 'groups') loadAdminGroups();
+}
+
+function openOverlay(id) { document.getElementById(id).classList.add('active'); lucide.createIcons(); }
+
+function closeOverlay(id) {
+	document.getElementById(id).classList.remove('active');
+	['chats','profile','settings','admin'].forEach(s => document.getElementById('tab-'+s)?.classList.remove('active'));
+	document.getElementById('tab-chats')?.classList.add('active');
+}
+
+// =================== CHAT INFO (tap name/avatar in header) ===================
+function openChatInfo() {
+	if (!partner) return;
+	if (isRoom) openGroupSettings();
+	else openUserView(partner);
+}
+
+// =================== USER PROFILE VIEW ===================
+function openUserView(name) {
+	const profile = allUsers.find(u => u.name === name) || { name };
+	document.getElementById('viewPfp').src = profile.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
+	document.getElementById('viewName').textContent = profile.name || name;
+	document.getElementById('viewStatus').textContent = profile.status || 'Available';
+	document.getElementById('viewMsgBtn').dataset.name = name;
+	document.getElementById('viewMsgBtn').style.display = (user && name === user.name) ? 'none' : 'flex';
+	const rows = [];
+	if (profile.job)      rows.push({ icon: 'briefcase', text: profile.job });
+	if (profile.email)    rows.push({ icon: 'mail',      text: profile.email });
+	if (profile.phone)    rows.push({ icon: 'phone',     text: profile.phone });
+	if (profile.lastSeen) rows.push({ icon: 'clock',     text: 'Last seen ' + profile.lastSeen });
+	document.getElementById('viewInfoRows').innerHTML = rows.map(r =>
+		`<div class="profile-info-row"><i data-lucide="${r.icon}"></i><span>${esc(r.text)}</span></div>`
+	).join('');
+	openOverlay('userViewModal');
+}
+
+function startChatFromView() {
+	const name = document.getElementById('viewMsgBtn').dataset.name;
+	closeOverlay('userViewModal');
+	startChat(name, false);
+}
+
+// =================== GROUP SETTINGS ===================
+let currentGroupData = null;
+
+function openGroupSettings() {
+	const g = allGroups.find(x => x.name === partner) || { name: partner, icon: '👥', description: '', rules: '', members: '' };
+	currentGroupData = g;
+	document.getElementById('gsIcon').textContent = g.icon || '👥';
+	document.getElementById('gsName').textContent = g.name || partner;
+	document.getElementById('gsDesc').textContent = g.description || '';
+	const rulesWrap = document.getElementById('gsRulesWrap');
+	if (g.rules) { rulesWrap.style.display = 'block'; document.getElementById('gsRules').textContent = g.rules; }
+	else rulesWrap.style.display = 'none';
+	const memberNames = (g.members || '').split(',').map(m => m.trim()).filter(Boolean);
+	const membersList = document.getElementById('gsMembersList');
+	membersList.innerHTML = memberNames.length
+		? memberNames.map((m, idx) => {
+			const isCreator = idx === 0;
+			const canRemove = user && (user.type === 'admin' || user.name === memberNames[0]);
+			return `<div class="member-chip">
+				<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m)}&background=007aff&color=fff" onerror="this.src='https://ui-avatars.com/api/?name=U&background=007aff&color=fff'">
+				<span class="member-chip-name" style="cursor:pointer" onclick="openUserViewFromGroup('${esc(m)}')">${esc(m)}</span>
+				${isCreator ? '<span class="member-chip-role">Admin</span>' : ''}
+				${canRemove && m !== user.name ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px;min-width:0" onclick="removeMemberFromGroup('${esc(m)}')"><i data-lucide="x"></i></button>` : ''}
+			</div>`;
+		}).join('')
+		: '<div class="no-results">No members listed</div>';
+	const isAdmin = user && (user.type === 'admin' || user.name === memberNames[0]);
+	document.getElementById('gsAddMemberBtn').style.display = isAdmin ? 'flex' : 'none';
+	const editSection = document.getElementById('gsEditSection');
+	if (isAdmin) {
+		editSection.style.display = 'block';
+		document.getElementById('gsEditIcon').value = g.icon || '';
+		document.getElementById('gsEditDesc').value = g.description || '';
+		document.getElementById('gsEditRules').value = g.rules || '';
+	} else {
+		editSection.style.display = 'none';
+	}
+	openOverlay('groupSettingsModal');
+}
+
+function openUserViewFromGroup(name) {
+	closeOverlay('groupSettingsModal');
+	openUserView(name);
+}
+
+async function saveGroupSettings() {
+	if (!currentGroupData) return;
+	const icon  = document.getElementById('gsEditIcon').value.trim() || '👥';
+	const desc  = document.getElementById('gsEditDesc').value.trim();
+	const rules = document.getElementById('gsEditRules').value.trim();
+	await api({ action: 'updateRoomProfile', name: currentGroupData.name, icon, description: desc, rules });
+	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
+	if (idx > -1) Object.assign(allGroups[idx], { icon, description: desc, rules });
+	currentGroupData = { ...currentGroupData, icon, description: desc, rules };
+	document.getElementById('gsIcon').textContent = icon;
+	document.getElementById('gsDesc').textContent = desc;
+	if (rules) { document.getElementById('gsRulesWrap').style.display='block'; document.getElementById('gsRules').textContent=rules; }
+	else document.getElementById('gsRulesWrap').style.display='none';
+	toast('Group updated ✓');
+}
+
+async function removeMemberFromGroup(memberName) {
+	if (!currentGroupData || !confirm(`Remove ${memberName} from this group?`)) return;
+	const members = (currentGroupData.members||'').split(',').map(m=>m.trim()).filter(m=>m && m!==memberName);
+	await api({ action: 'updateRoomProfile', name: currentGroupData.name, members: members.join(',') });
+	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
+	if (idx > -1) allGroups[idx].members = members.join(',');
+	currentGroupData.members = members.join(',');
+	toast(`${memberName} removed`);
+	openGroupSettings();
+}
+
+async function deleteCurrentGroup() {
+	if (!currentGroupData || !confirm(`Delete group "${currentGroupData.name}"? This cannot be undone.`)) return;
+	await api({ action: 'deleteRoom', name: currentGroupData.name });
+	allGroups = allGroups.filter(g => g.name !== currentGroupData.name);
+	closeOverlay('groupSettingsModal');
+	closeChat();
+	fetchRecentChats();
+	toast('Group deleted');
+}
+
+// =================== ADD MEMBER TO EXISTING GROUP ===================
+let addMemberSelected = new Set();
+
+function openAddMemberPicker() {
+	addMemberSelected = new Set();
+	document.getElementById('addMemberSearch').value = '';
+	renderAddMemberList('');
+	openOverlay('addMemberModal');
+}
+
+function renderAddMemberList(query) {
+	const q = query.toLowerCase();
+	const currentMembers = (currentGroupData?.members||'').split(',').map(m=>m.trim());
+	const list = allUsers.filter(u =>
+		u.name !== user.name && !currentMembers.includes(u.name) &&
+		(!q || u.name.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
+	);
+	const container = document.getElementById('addMemberList');
+	if (!list.length) { container.innerHTML = '<div class="no-results">No users to add</div>'; return; }
+	container.innerHTML = list.map(u => `
+		<div class="member-pick-item" onclick="toggleAddMember('${esc(u.name)}', this)">
+			<input type="checkbox" id="amc-${esc(u.name)}" ${addMemberSelected.has(u.name)?'checked':''}>
+			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff">
+			<div><div class="mpn">${esc(u.name)}</div><div class="mps">${esc(u.status||u.job||'')}</div></div>
+		</div>`).join('');
+}
+
+function toggleAddMember(name, row) {
+	const cb = row.querySelector('input[type=checkbox]');
+	if (addMemberSelected.has(name)) { addMemberSelected.delete(name); cb.checked = false; }
+	else { addMemberSelected.add(name); cb.checked = true; }
+}
+
+async function confirmAddMembers() {
+	if (!addMemberSelected.size) { toast('Select at least one member'); return; }
+	const current = (currentGroupData?.members||'').split(',').map(m=>m.trim()).filter(Boolean);
+	const updated = [...new Set([...current, ...addMemberSelected])].join(',');
+	await api({ action: 'updateRoomProfile', name: currentGroupData.name, members: updated });
+	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
+	if (idx > -1) allGroups[idx].members = updated;
+	currentGroupData.members = updated;
+	closeOverlay('addMemberModal');
+	toast(`${addMemberSelected.size} member(s) added ✓`);
+	openGroupSettings();
+}
+
+// =================== NEW GROUP MEMBER PICKER ===================
+let newGroupSelected = new Set();
+
+function renderNewGroupMemberPicker(query) {
+	const q = (query||'').toLowerCase();
+	const list = allUsers.filter(u =>
+		u.name !== (user?.name) && (!q || u.name.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
+	);
+	const container = document.getElementById('newGroupMemberList');
+	if (!list.length) { container.innerHTML = '<div class="no-results" style="padding:12px">No users found</div>'; return; }
+	container.innerHTML = list.map(u => `
+		<div class="member-pick-item" onclick="toggleNewGroupMember('${esc(u.name)}', this)">
+			<input type="checkbox" id="ngmc-${esc(u.name)}" ${newGroupSelected.has(u.name)?'checked':''}>
+			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff">
+			<div><div class="mpn">${esc(u.name)}</div><div class="mps">${esc(u.status||u.job||'')}</div></div>
+		</div>`).join('');
+	updateNewGroupChips();
+}
+
+function toggleNewGroupMember(name, row) {
+	const cb = row.querySelector('input[type=checkbox]');
+	if (newGroupSelected.has(name)) { newGroupSelected.delete(name); cb.checked = false; }
+	else { newGroupSelected.add(name); cb.checked = true; }
+	updateNewGroupChips();
+}
+
+function updateNewGroupChips() {
+	const wrap = document.getElementById('newGroupSelectedWrap');
+	const chips = document.getElementById('newGroupSelectedChips');
+	if (!newGroupSelected.size) { wrap.style.display='none'; return; }
+	wrap.style.display = 'block';
+	chips.innerHTML = [...newGroupSelected].map(n =>
+		`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(0,122,255,0.15);font-size:12px;font-weight:600;cursor:pointer" onclick="removeNewGroupMember('${esc(n)}')">
+			${esc(n)} <span style="opacity:0.6">×</span>
+		</span>`
+	).join('');
+}
+
+function removeNewGroupMember(name) {
+	newGroupSelected.delete(name);
+	const cb = document.getElementById('ngmc-' + name);
+	if (cb) cb.checked = false;
+	updateNewGroupChips();
+}
+
+lucide.createIcons();
+</script>
 </body>
 </html>
