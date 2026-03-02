@@ -5,6 +5,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#0b141a" media="(prefers-color-scheme: dark)">
+	<meta name="theme-color" content="#dfe9f3" media="(prefers-color-scheme: light)">
 	<title>iMind Pro — Liquid Glass</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,10 +29,36 @@
 			--glass-border: rgba(255,255,255,0.08);
 		}
 		* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
-		html,body { height:100%; margin:0; font-family:'Inter',sans-serif; background:linear-gradient(145deg,var(--bg1),var(--bg2)) fixed; color:var(--text); overflow:hidden; }
+
+		/* ── True full-screen on every phone ──────────────────────────────────
+		   100dvh = dynamic viewport height. Unlike 100vh it shrinks when the
+		   browser toolbar appears and grows when it hides — so the app always
+		   fills the visible screen without overflow or gaps.                  */
+		html {
+			height: 100%;
+			height: 100dvh;           /* modern browsers */
+			overflow: hidden;
+		}
+		body {
+			margin: 0;
+			/* Fallback chain: --real-vh (JS measured) → dvh → svh → vh */
+			min-height: calc(var(--real-vh, 1vh) * 100);
+			min-height: 100svh;
+			min-height: 100dvh;
+			height: calc(var(--real-vh, 1vh) * 100);
+			height: 100dvh;
+			font-family: 'Inter', sans-serif;
+			background: linear-gradient(145deg, var(--bg1), var(--bg2)) fixed;
+			color: var(--text);
+			overflow: hidden;
+			overscroll-behavior: none;
+			-webkit-overflow-scrolling: touch;
+			-webkit-text-size-adjust: 100%;
+			text-size-adjust: 100%;
+		}
 		.glass { background:var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%); box-shadow:0 10px 35px rgba(0,0,0,0.15); }
-		.app-container { display:flex; gap:12px; padding:12px; height:100%; }
-		.screen { display:none; flex-direction:column; width:100%; height:100%; border-radius:18px; overflow:hidden; }
+		.app-container { display:flex; gap:12px; padding:12px; height:calc(var(--real-vh,1vh)*100); height:100dvh; }
+		.screen { display:none; flex-direction:column; width:100%; height:calc(var(--real-vh,1vh)*100); height:100dvh; border-radius:18px; overflow:hidden; }
 		.screen.active { display:flex; }
 		.sidebar { width:360px; min-width:300px; display:flex; flex-direction:column; }
 		.panel { flex:1; display:flex; flex-direction:column; }
@@ -151,47 +180,105 @@
 		::-webkit-scrollbar { width:4px; }
 		::-webkit-scrollbar-track { background:transparent; }
 		::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:4px; }
-		@media(max-width:860px) {
-			.app-container { flex-direction:column; padding:0; gap:0; }
-			.sidebar { width:100%; height:100%; min-width:unset; }
-			.panel { width:100%; height:100%; position:fixed; top:0; left:0; z-index:100; display:none; }
-			.panel.active { display:flex; }
-			.screen { border-radius:0; }
+		/* ── Responsive: mobile layout ────────────────────────────────────── */
+		@media (max-width: 860px) {
+			.app-container {
+				flex-direction: column;
+				padding: 0;
+				gap: 0;
+				height: calc(var(--real-vh, 1vh) * 100);
+				height: 100dvh;
+			}
+			.sidebar {
+				width: 100%;
+				height: calc(var(--real-vh, 1vh) * 100);
+				height: 100dvh;
+				min-width: unset;
+				border-radius: 0;
+			}
+			.panel {
+				width: 100%;
+				height: calc(var(--real-vh, 1vh) * 100);
+				height: 100dvh;
+				position: fixed;
+				top: 0; left: 0;
+				z-index: 100;
+				display: none;
+				border-radius: 0;
+			}
+			.panel.active { display: flex; }
+			.screen { border-radius: 0; }
+			.modal-box {
+				width: 100%;
+				max-width: 100%;
+				max-height: 92dvh;
+				max-height: calc(var(--real-vh, 1vh) * 92);
+				border-radius: 20px 20px 0 0;
+				margin-top: auto;
+				margin-bottom: 0;
+				align-self: flex-end;
+			}
+			.modal-overlay { align-items: flex-end; }
+			.bubble { max-width: 88%; }
 		}
 
-		/* ── Notch / Safe Area Support ───────────────────────────────────────
-		   Covers: iPhone notch, Dynamic Island, Android punch-hole,
-		   home indicator bar, and landscape side cutouts.
-		   env() values are provided by the browser when the device has
-		   a physical cutout or rounded corners.                            */
-		@supports (padding: env(safe-area-inset-top)) {
-			html {
-				/* Push the whole page down past the status bar / notch */
-				padding-top: env(safe-area-inset-top);
-				padding-bottom: env(safe-area-inset-bottom);
-				padding-left: env(safe-area-inset-left);
-				padding-right: env(safe-area-inset-right);
+		/* ── Safe Area / Notch / Dynamic Island / Home Bar ────────────────────
+		   viewport-fit=cover lets us paint behind notches.
+		   env(safe-area-inset-*) gives the exact pixel clearances.
+		   The @supports guard means older browsers that don't support env()
+		   simply skip the block — no layout breakage.                        */
+		@supports (padding-top: env(safe-area-inset-top)) {
+
+			/* Sidebar top header: clear the notch / status bar */
+			.sidebar .header:first-child,
+			.panel   .header:first-child {
+				padding-top: calc(16px + env(safe-area-inset-top));
 			}
-			/* Tab bar at the bottom sits above the home indicator */
+
+			/* Tab bar: sit above the home indicator pill */
 			.tab-bar {
 				padding-bottom: calc(10px + env(safe-area-inset-bottom));
 			}
-			/* Top headers clear the notch when full-screen */
-			.header:first-child {
-				padding-top: calc(16px + env(safe-area-inset-top));
+
+			/* Input bar at bottom of chat: also above home indicator */
+			.panel .header:last-child {
+				padding-bottom: calc(12px + env(safe-area-inset-bottom));
 			}
-			/* Call panel full-screen header */
+
+			/* Full-screen Jitsi call header: clear the notch */
 			.call-header {
-				padding-top: calc(14px + env(safe-area-inset-top));
+				padding-top:  calc(14px + env(safe-area-inset-top));
+				padding-left: calc(20px + env(safe-area-inset-left));
+				padding-right: calc(20px + env(safe-area-inset-right));
 			}
-			/* Modals: push content away from side cutouts in landscape */
-			.modal-box {
-				margin-left: env(safe-area-inset-left);
-				margin-right: env(safe-area-inset-right);
+
+			/* Landscape: side cutouts affect left/right padding */
+			@media (orientation: landscape) {
+				.sidebar, .panel {
+					padding-left:  env(safe-area-inset-left);
+					padding-right: env(safe-area-inset-right);
+				}
+				.modal-box {
+					margin-left:  env(safe-area-inset-left);
+					margin-right: env(safe-area-inset-right);
+				}
 			}
-			/* Toast: rise above home indicator */
+
+			/* Toast: float above home indicator bar */
 			#toast {
-				bottom: calc(30px + env(safe-area-inset-bottom));
+				bottom: calc(34px + env(safe-area-inset-bottom));
+			}
+
+			/* Context menus: keep away from edges */
+			.ctx-menu {
+				max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
+				max-height: calc(100vh  - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
+			}
+
+			/* Login wrap: don't let it touch the notch or home bar */
+			.login-wrap {
+				margin-top:    env(safe-area-inset-top);
+				margin-bottom: env(safe-area-inset-bottom);
 			}
 		}
 	</style>
@@ -1491,6 +1578,22 @@ function removeNewGroupMember(name) {
 }
 
 lucide.createIcons();
+
+// ── Full-screen viewport fix for mobile browsers ──────────────────────────
+// iOS Safari and Android Chrome resize the viewport when the address bar
+// shows/hides. We measure the real window.innerHeight and store it as
+// --real-vh so layouts use calc(var(--real-vh) * 100) for true full-screen.
+(function () {
+	function setVH() {
+		const vh = window.innerHeight * 0.01;
+		document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+		// Also directly patch any element using 100dvh fallback
+		document.documentElement.style.setProperty('--full-h', `${window.innerHeight}px`);
+	}
+	setVH();
+	window.addEventListener('resize', setVH);
+	window.addEventListener('orientationchange', () => setTimeout(setVH, 300));
+})();
 </script>
 </body>
 </html>
