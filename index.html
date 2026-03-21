@@ -10,25 +10,20 @@
 	<meta name="application-name" content="iMind Pro">
 	<meta name="theme-color" content="#0b141a" media="(prefers-color-scheme: dark)">
 	<meta name="theme-color" content="#dfe9f3" media="(prefers-color-scheme: light)">
-	<!-- PWA Home Screen Icons — iOS, Android, desktop -->
 	<link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png">
-	<link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png">
-	<link rel="apple-touch-icon" sizes="120x120" href="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png">
 	<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png">
 	<title>iMind Pro</title>
-	<!-- Font: swap keeps text visible while loading -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&display=swap" rel="stylesheet">
-	<!-- Lucide icons -->
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 	<style>
 		/* ─── Colour tokens ─────────────────────────────────────────────────── */
 		:root {
-			/* LIGHT MODE — every value passes WCAG AA (4.5:1) on its background */
 			--bg1:#c4d4e6; --bg2:#dae8f5;
-			--text:#080c12;         /* headings + body — near-black */
-			--sub:#354a60;          /* timestamps, captions — ≥5:1 on panel bg */
+			--text:#080c12;         
+			--sub:#354a60;          
 			--prim:#004fd4; --ok:#1a8e3a;
 			--glass-bg:rgba(255,255,255,0.70);
 			--glass-border:rgba(160,200,255,0.50);
@@ -40,14 +35,6 @@
 			--row-hover:rgba(255,255,255,0.80);
 			--card-bg:rgba(255,255,255,0.55);
 			--shadow:0 4px 20px rgba(0,30,80,0.10);
-
-			/* ── FIX 1: Safe area inset variables ──
-			   These get overridden by JS with actual env() values
-			   so CSS can use them as plain calc() numbers           */
-			--sat: env(safe-area-inset-top, 0px);
-			--sab: env(safe-area-inset-bottom, 0px);
-			--sal: env(safe-area-inset-left, 0px);
-			--sar: env(safe-area-inset-right, 0px);
 		}
 		body.theme-dark {
 			--bg1:#0b141a; --bg2:#111b22;
@@ -69,36 +56,40 @@
 		*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 		*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 
-		html {
-			height: 100%;
+		html, body {
+			margin: 0; padding: 0;
 			height: 100dvh;
-			overflow: hidden;
-		}
-		body {
-			margin: 0;
-			min-height: calc(var(--real-vh, 1vh) * 100);
-			min-height: 100svh;
-			min-height: 100dvh;
-			height: calc(var(--real-vh, 1vh) * 100);
-			height: 100dvh;
+			width: 100vw;
 			font-family: 'Inter', sans-serif;
 			background: linear-gradient(145deg, var(--bg1), var(--bg2)) fixed;
 			color: var(--text);
 			overflow: hidden;
 			overscroll-behavior: none;
-			-webkit-overflow-scrolling: touch;
-			-webkit-text-size-adjust: 100%;
-			text-size-adjust: 100%;
 		}
-		.glass{background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);box-shadow:var(--shadow);}
-		.app-container { display:flex; gap:12px; padding:12px; height:calc(var(--real-vh,1vh)*100); height:100dvh; }
-		.screen { display:none; flex-direction:column; width:100%; height:calc(var(--real-vh,1vh)*100); height:100dvh; border-radius:18px; overflow:hidden; }
+		.glass {
+			background:var(--glass-bg);
+			border:1px solid var(--glass-border);
+			backdrop-filter:blur(14px) saturate(140%);
+			-webkit-backdrop-filter:blur(14px) saturate(140%);
+			box-shadow:var(--shadow);
+		}
+		
+		/* ── FIX: True 100dvh Containers with No Bleed ── */
+		.app-container { display:flex; gap:12px; padding:12px; height:100dvh; width:100vw; }
+		.screen { display:none; flex-direction:column; width:100%; height:100%; border-radius:18px; overflow:hidden; }
 		.screen.active { display:flex; }
-		.sidebar { width:360px; min-width:300px; display:flex; flex-direction:column; }
-		.panel { flex:1; display:flex; flex-direction:column; }
+		
+		/* ── FIX: Login Screen Centering ── */
+		#loginScreen { align-items: center; justify-content: center; padding: 20px; }
+		.login-wrap { width: 100%; max-width: 400px; padding: 40px; text-align: center; border-radius: 24px; }
+		.login-logo { width:80px; height:80px; margin-bottom:20px; border-radius:20px; }
+
+		.sidebar { width:360px; min-width:300px; display:flex; flex-direction:column; height: 100%; }
+		.panel { flex:1; display:flex; flex-direction:column; height: 100%; }
 		.header { display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
 		h1{font-size:18px;margin:0;font-weight:700;color:var(--text);}
-		.btn{padding:10px 16px;border:none;border-radius:12px;font-weight:600;cursor:pointer;transition:opacity .12s,transform .1s;background:rgba(0,0,0,0.07);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;}
+		
+		.btn{padding:10px 16px;border:none;border-radius:12px;font-weight:600;cursor:pointer;transition:0.1s;background:rgba(0,0,0,0.07);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;}
 		body.theme-dark .btn{background:rgba(255,255,255,0.08);}
 		.btn-prim{background:var(--prim)!important;color:#fff!important;}
 		.btn:hover,.btn:active{opacity:.82;transform:scale(.97);}
@@ -107,38 +98,44 @@
 		body.theme-dark .btn-danger{background:rgba(255,60,60,0.14)!important;color:#f87171!important;}
 		.btn-danger:hover,.btn-danger:active{opacity:.82;transform:scale(.97);}
 		.btn-sm{padding:6px 10px;font-size:12px;border-radius:9px;}
-		.input-glass{width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--input-bg);color:var(--text);outline:none;font-family:'Inter',sans-serif;font-size:14px;transition:box-shadow .15s,border-color .15s;}
+		
+		.input-glass{width:100%;padding:12px;border:1.5px solid var(--glass-border);border-radius:14px;background:var(--input-bg);color:var(--text);outline:none;font-family:'Inter',sans-serif;font-size:14px;transition:0.15s;}
 		.input-glass:focus{box-shadow:0 0 0 3px rgba(0,79,212,.22);border-color:var(--prim);}
 		.input-glass::placeholder{color:var(--sub);opacity:.7;}
 		textarea.input-glass { resize:vertical; }
+		
 		.row{display:flex;align-items:center;padding:12px;border-radius:16px;margin:3px 8px;cursor:pointer;background:var(--row-bg);transition:background .15s;}
 		.row:hover,.row:active{background:var(--row-hover);}
 		.avatar { width:48px; height:48px; border-radius:50%; margin-right:12px; object-fit:cover; background:var(--prim); flex-shrink:0; }
 		.muted { color:var(--sub); }
+		
 		.messages{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 		.bubble{max-width:76%;padding:10px 14px;border-radius:18px;line-height:1.5;font-size:14.5px;word-break:break-word;cursor:context-menu;}
 		.bubble.in{align-self:flex-start;background:var(--bubble-in);color:var(--text);border-bottom-left-radius:4px;box-shadow:var(--shadow);}
 		.bubble.out{align-self:flex-end;background:var(--bubble-out);color:var(--bubble-out-text);border-bottom-right-radius:4px;box-shadow:var(--shadow);}
 
-		.login-wrap { max-width:400px; margin:auto; padding:40px; text-align:center; border-radius:24px; }
-		.login-logo { width:80px; height:80px; margin-bottom:20px; border-radius:20px; }
-		.tab-bar { display:flex; justify-content:space-around; padding:10px; border-top:1px solid var(--glass-border); flex-shrink:0; }
+		/* ── FIX: Continuous backgrounds on fixed bottom bars ── */
+		.tab-bar { display:flex; justify-content:space-around; padding:10px; border-top:1px solid var(--glass-border); flex-shrink:0; background:var(--glass-bg); }
 		.tab { color:var(--sub); display:flex; flex-direction:column; align-items:center; font-size:10px; cursor:pointer; gap:3px; padding:4px 8px; border-radius:10px; transition:0.15s; }
 		.tab.active { color:var(--prim); }
 		.tab i { width:20px; height:20px; }
+		.chat-input-bar { background:var(--glass-bg); flex-shrink:0; }
+		
 		/* Modals */
 		.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.38);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;}
 		.modal-overlay.active { display:flex; }
 		.modal-box { width:90%; max-width:520px; max-height:88vh; overflow-y:auto; border-radius:24px; padding:28px; }
 		.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
 		.modal-header h2{margin:0;font-size:18px;font-weight:700;color:var(--text);}
+		
 		/* Forms */
-		.form-group { margin-bottom:14px; }
+		.form-group { margin-bottom:14px; text-align: left; }
 		.form-group label { display:block; font-size:11px; font-weight:600; color:var(--sub); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
 		.form-row { display:flex; gap:10px; }
 		.form-row .form-group { flex:1; }
 		.form-card { padding:16px; border-radius:14px; background:var(--card-bg); border:1px solid var(--glass-border); margin-bottom:16px; }
 		.form-card h3 { margin:0 0 14px; font-size:14px; }
+		
 		/* Admin */
 		.admin-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
 		.admin-tab { padding:8px 16px; border-radius:10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--sub); transition:0.15s; }
@@ -151,19 +148,8 @@
 		.badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; }
 		.badge-admin { background:rgba(0,122,255,0.2); color:var(--prim); }
 		.badge-user { background:rgba(52,199,89,0.2); color:var(--ok); }
-		/* Settings */
-		.settings-section { margin-bottom:24px; }
-		.settings-section h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--sub); margin:0 0 12px; }
-		.settings-row { display:flex; align-items:center; justify-content:space-between; padding:12px; border-radius:14px; background:var(--card-bg); margin-bottom:8px; gap:12px; }
-		.settings-row-label{font-size:14px;font-weight:500;color:var(--text);}
-		.settings-row-sub { font-size:12px; color:var(--sub); margin-top:2px; }
-		/* Avatar upload */
-		.avatar-upload-wrap { position:relative; width:80px; height:80px; margin:0 auto 16px; }
-		.avatar-upload-wrap img { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--glass-border); }
-		.avatar-upload-btn { position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--prim); color:#fff; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-		.avatar-upload-btn i { width:14px; height:14px; }
-		/* Group icon */
-		.group-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#ff9500,#ff3b30); display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; font-size:20px; }
+		.badge-pending { background:rgba(255,149,0,0.2); color:#ff9500; }
+		
 		/* Toggle */
 		.toggle { position:relative; width:42px; height:24px; flex-shrink:0; }
 		.toggle input { opacity:0; width:0; height:0; }
@@ -171,79 +157,40 @@
 		.toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; }
 		.toggle input:checked+.toggle-slider { background:var(--prim); }
 		.toggle input:checked+.toggle-slider::before { transform:translateX(18px); }
-		/* Search */
-		.search-wrap { position:relative; padding:10px; }
-		.search-results { position:absolute; top:calc(100% - 6px); left:10px; right:10px; z-index:200; border-radius:14px; overflow:hidden; max-height:320px; overflow-y:auto; }
-		.search-result-item { display:flex; align-items:center; padding:10px 14px; cursor:pointer; transition:0.15s; gap:10px; }
-		.search-result-item:hover,.search-result-item:active{background:var(--row-hover);}
+
 		/* Call panel */
 		#callPanel { display:none; position:fixed; inset:0; z-index:900; background:#000; flex-direction:column; }
 		#callPanel.active { display:flex; }
 		#jitsiFrame { flex:1; border:none; width:100%; }
 		.call-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:rgba(0,0,0,0.85); }
 		.call-header span { color:#fff; font-weight:600; font-size:15px; }
-		/* Context menu */
-		.ctx-menu { position:fixed; z-index:800; border-radius:14px; padding:6px; min-width:160px; }
-		.ctx-item { padding:9px 14px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:0.12s; }
-		.ctx-item:hover,.ctx-item:active{background:var(--row-hover);}
-		.ctx-item.danger{color:#b91c1c;} body.theme-dark .ctx-item.danger{color:#f87171;}
-		.ctx-sep { height:1px; background:var(--glass-border); margin:4px 0; }
-		/* User Profile Card */
-		.profile-card-avatar { width:88px; height:88px; border-radius:50%; object-fit:cover; border:3px solid var(--glass-border); display:block; margin:0 auto 12px; }
-		.profile-card-name{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--text);}
-		.profile-card-status { text-align:center; color:var(--sub); font-size:13px; margin-bottom:20px; }
-		.profile-info-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:var(--card-bg); margin-bottom:8px; }
-		.profile-info-row i { width:18px; height:18px; color:var(--prim); flex-shrink:0; }
-		.profile-info-row span { font-size:13px; }
-		/* Group Settings */
-		.group-banner { display:flex; flex-direction:column; align-items:center; padding:20px 0 8px; }
-		.group-banner .gi { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#ff9500,#ff3b30); display:flex; align-items:center; justify-content:center; font-size:34px; margin-bottom:10px; }
-		.group-banner h3{margin:0 0 4px;font-size:18px;font-weight:700;color:var(--text);}
-		.group-banner p { margin:0; color:var(--sub); font-size:13px; text-align:center; }
-		.member-chip { display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:12px; background:var(--card-bg); margin-bottom:6px; }
-		.member-chip img { width:32px; height:32px; border-radius:50%; object-fit:cover; }
-		.member-chip-name{font-size:13px;font-weight:600;flex:1;color:var(--text);}
-		.member-chip-role { font-size:11px; color:var(--prim); font-weight:600; }
-		/* Member picker checkboxes */
-		.member-pick-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; cursor:pointer; transition:0.15s; }
-		.member-pick-item:hover,.member-pick-item:active{background:var(--row-hover);}
-		.member-pick-item input[type=checkbox] { width:16px; height:16px; accent-color:var(--prim); cursor:pointer; flex-shrink:0; }
-		.member-pick-item img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
-		.member-pick-item .mpn{font-size:13px;font-weight:600;color:var(--text);}
-		.member-pick-item .mps { font-size:11px; color:var(--sub); }
-		/* Misc */
+
+		/* Group icon & Misc */
+		.group-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#ff9500,#ff3b30); display:flex; align-items:center; justify-content:center; margin-right:12px; flex-shrink:0; font-size:20px; }
 		.no-results { text-align:center; padding:24px; color:var(--sub); font-size:13px; }
 		::-webkit-scrollbar { width:4px; }
 		::-webkit-scrollbar-track { background:transparent; }
 		::-webkit-scrollbar-thumb{background:rgba(80,110,150,0.25);border-radius:4px;}
 
-		/* ── FIX 1: Notch / Safe Area — Chat panel top header ─────────────────
-		   The sidebar + chat panel top header MUST clear the status bar / notch.
-		   We use a dedicated class so it only applies to the TOP header of each
-		   panel, not every .header element in the app.                          */
-		.top-header {
-			padding-top: calc(16px + env(safe-area-inset-top, 0px)) !important;
-		}
+		/* ── SafeArea Top Header Fix ── */
+		.top-header { padding-top: calc(16px + env(safe-area-inset-top, 0px)) !important; }
 
-		/* ── Responsive: mobile layout ────────────────────────────────────── */
+		/* ── Responsive Mobile Fixes ── */
 		@media (max-width: 860px) {
 			.app-container {
 				flex-direction: column;
 				padding: 0;
 				gap: 0;
-				height: calc(var(--real-vh, 1vh) * 100);
 				height: 100dvh;
 			}
 			.sidebar {
 				width: 100%;
-				height: calc(var(--real-vh, 1vh) * 100);
 				height: 100dvh;
 				min-width: unset;
 				border-radius: 0;
 			}
 			.panel {
 				width: 100%;
-				height: calc(var(--real-vh, 1vh) * 100);
 				height: 100dvh;
 				position: fixed;
 				top: 0; left: 0;
@@ -257,7 +204,6 @@
 				width: 100%;
 				max-width: 100%;
 				max-height: 92dvh;
-				max-height: calc(var(--real-vh, 1vh) * 92);
 				border-radius: 20px 20px 0 0;
 				margin-top: auto;
 				margin-bottom: 0;
@@ -267,149 +213,133 @@
 			.bubble { max-width: 88%; }
 		}
 
-		/* ── Safe Area / Notch / Dynamic Island / Home Bar ────────────────────*/
-		@supports (padding-top: env(safe-area-inset-top)) {
-
-			/* Tab bar: sit above the home indicator pill */
-			.tab-bar {
-				padding-bottom: calc(10px + env(safe-area-inset-bottom));
-			}
-
-			/* Input bar at bottom of chat: also above home indicator */
-			.chat-input-bar {
-				padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-			}
-
-			/* Full-screen Jitsi call header: clear the notch */
-			.call-header {
-				padding-top:  calc(14px + env(safe-area-inset-top));
-				padding-left: calc(20px + env(safe-area-inset-left));
-				padding-right: calc(20px + env(safe-area-inset-right));
-			}
-
-			/* Landscape: side cutouts affect left/right padding */
+		/* ── iOS Safe Area Bottom Fixes ── */
+		@supports (padding-bottom: env(safe-area-inset-bottom)) {
+			.tab-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+			.chat-input-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
+			#toast { bottom: calc(34px + env(safe-area-inset-bottom)); }
 			@media (orientation: landscape) {
 				.sidebar, .panel {
-					padding-left:  env(safe-area-inset-left);
+					padding-left: env(safe-area-inset-left);
 					padding-right: env(safe-area-inset-right);
 				}
 				.modal-box {
-					margin-left:  env(safe-area-inset-left);
+					margin-left: env(safe-area-inset-left);
 					margin-right: env(safe-area-inset-right);
 				}
 			}
-
-			/* Toast: float above home indicator bar */
-			#toast {
-				bottom: calc(34px + env(safe-area-inset-bottom));
-			}
-
-			/* Context menus: keep away from edges */
-			.ctx-menu {
-				max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
-				max-height: calc(100vh  - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);
-			}
-
-			/* Login wrap: don't let it touch the notch or home bar */
-			.login-wrap {
-				margin-top:    env(safe-area-inset-top);
-				margin-bottom: env(safe-area-inset-bottom);
-			}
 		}
 
+		/* Menus & Profile Cards */
+		.ctx-menu { position:fixed; z-index:800; border-radius:14px; padding:6px; min-width:160px; }
+		.ctx-item { padding:9px 14px; border-radius:9px; cursor:pointer; font-size:13px; font-weight:500; display:flex; align-items:center; gap:8px; transition:0.12s; }
+		.ctx-item:hover,.ctx-item:active{background:var(--row-hover);}
+		.ctx-item.danger{color:#b91c1c;} body.theme-dark .ctx-item.danger{color:#f87171;}
+		.ctx-sep { height:1px; background:var(--glass-border); margin:4px 0; }
+		.profile-card-avatar { width:88px; height:88px; border-radius:50%; object-fit:cover; border:3px solid var(--glass-border); display:block; margin:0 auto 12px; }
+		.profile-card-name{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--text);}
+		.profile-card-status { text-align:center; color:var(--sub); font-size:13px; margin-bottom:20px; }
+		.profile-info-row { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:var(--card-bg); margin-bottom:8px; }
+		.profile-info-row i { width:18px; height:18px; color:var(--prim); flex-shrink:0; }
+		.profile-info-row span { font-size:13px; }
+		
 		/* Voice recording state */
-		.recording-active {
-			background: rgba(255,50,50,0.25) !important;
-			animation: pulse-red 1s infinite;
-		}
-		@keyframes pulse-red {
-			0%,100% { box-shadow: 0 0 0 0 rgba(255,50,50,0.4); }
-			50%      { box-shadow: 0 0 0 6px rgba(255,50,50,0); }
-		}
+		.recording-active { background: rgba(255,50,50,0.25) !important; animation: pulse-red 1s infinite; }
+		@keyframes pulse-red { 0%,100% { box-shadow: 0 0 0 0 rgba(255,50,50,0.4); } 50% { box-shadow: 0 0 0 6px rgba(255,50,50,0); } }
 	</style>
 </head>
 <body class="theme-light">
 
-<!-- LOGIN -->
-<div class="app-container">
-	<div id="loginScreen" class="screen active">
-		<div class="login-wrap glass">
-			<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" class="login-logo" onerror="this.style.display='none'">
-			<h2 style="margin-bottom:30px">iMind Pro</h2>
-			<div class="form-group"><input type="text" id="idInput" class="input-glass" placeholder="Email or Phone"></div>
-			<div class="form-group" style="margin-bottom:20px"><input type="password" id="passInput" class="input-glass" placeholder="Password" onkeydown="if(event.key==='Enter')handleLogin()"></div>
-			<button id="loginBtn" class="btn btn-prim" style="width:100%" onclick="handleLogin()">Continue</button>
-			<div id="loginErr" style="color:#ff4444;font-size:13px;margin-top:12px;display:none">Invalid credentials — please try again.</div>
+<div id="loginScreen" class="screen active">
+	<div class="login-wrap glass" id="loginFormWrap">
+		<img src="https://raw.githubusercontent.com/MindBreakOps/MBO-Conn/1a5156f9bb1c7160ba996bd79862ccf774895715/mb.png" class="login-logo" onerror="this.style.display='none'">
+		<h2 style="margin-bottom:30px">iMind Pro</h2>
+		<div class="form-group"><input type="text" id="idInput" class="input-glass" placeholder="Email or Phone"></div>
+		<div class="form-group" style="margin-bottom:20px"><input type="password" id="passInput" class="input-glass" placeholder="Password" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+		<button id="loginBtn" class="btn btn-prim" style="width:100%" onclick="handleLogin()">Sign In</button>
+		<div id="loginErr" style="color:#ff4444;font-size:13px;margin-top:12px;display:none">Invalid credentials</div>
+		
+		<div style="margin-top:24px;font-size:14px;color:var(--sub)">
+			Need an account? <a href="#" onclick="toggleSignup(true)" style="color:var(--prim);font-weight:600;text-decoration:none">Request one</a>
 		</div>
 	</div>
 
-	<!-- MAIN APP -->
-	<div id="mainApp" class="app-container" style="display:none;width:100%;padding:0">
+	<div class="login-wrap glass" id="signupFormWrap" style="display:none">
+		<h2 style="margin-bottom:24px">Request Account</h2>
+		<div class="form-group"><input type="text" id="regName" class="input-glass" placeholder="Full Name"></div>
+		<div class="form-group"><input type="email" id="regEmail" class="input-glass" placeholder="Email Address"></div>
+		<div class="form-group"><input type="text" id="regPhone" class="input-glass" placeholder="Phone Number"></div>
+		<div class="form-group"><input type="text" id="regJob" class="input-glass" placeholder="Job Title (Optional)"></div>
+		<div class="form-group" style="margin-bottom:20px"><input type="password" id="regPass" class="input-glass" placeholder="Create Password"></div>
+		<button id="signupBtn" class="btn btn-prim" style="width:100%" onclick="submitSignup()">Send Request</button>
+		
+		<div style="margin-top:24px;font-size:14px;color:var(--sub)">
+			Already have an account? <a href="#" onclick="toggleSignup(false)" style="color:var(--prim);font-weight:600;text-decoration:none">Sign In</a>
+		</div>
+	</div>
+</div>
 
-		<!-- SIDEBAR -->
-		<div class="sidebar glass">
-			<!-- FIX 1: Added top-header class to clear notch on sidebar -->
-			<div class="header top-header">
-				<div style="display:flex;align-items:center;gap:10px">
-					<img id="myPfpThumb" src="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--glass-border)" onclick="showTab('profile')" onerror="this.src='https://ui-avatars.com/api/?name=Me&background=007aff&color=fff'">
-					<h1>iMind Pro</h1>
-				</div>
-				<button class="btn" title="New Chat / Group" onclick="openNewChatModal()"><i data-lucide="plus"></i></button>
+<div id="mainApp" class="app-container" style="display:none;">
+
+	<div class="sidebar glass">
+		<div class="header top-header">
+			<div style="display:flex;align-items:center;gap:10px">
+				<img id="myPfpThumb" src="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--glass-border)" onclick="showTab('profile')">
+				<h1>iMind Pro</h1>
 			</div>
-
-			<div class="search-wrap">
-				<input type="text" id="contactSearch" class="input-glass" placeholder="Search people & groups…" oninput="handleSearch(this.value)" autocomplete="off">
-				<div id="searchResults" class="search-results glass" style="display:none"></div>
-			</div>
-
-			<div id="recentChatsList" style="flex:1;overflow-y:auto;padding-bottom:4px"></div>
-
-			<div class="tab-bar">
-				<div class="tab active" id="tab-chats" onclick="showTab('chats')"><i data-lucide="message-circle"></i>Chats</div>
-				<div class="tab" id="tab-profile" onclick="showTab('profile')"><i data-lucide="user"></i>Profile</div>
-				<div class="tab" id="tab-settings" onclick="showTab('settings')"><i data-lucide="settings"></i>Settings</div>
-				<div class="tab" id="tab-admin" onclick="showTab('admin')" style="display:none"><i data-lucide="shield"></i>Admin</div>
-			</div>
+			<button class="btn" title="New Chat / Group" onclick="openNewChatModal()"><i data-lucide="plus"></i></button>
 		</div>
 
-		<!-- CHAT PANEL -->
-		<div id="chatPanel" class="panel glass">
-			<div id="noChatSelected" style="margin:auto;text-align:center;color:var(--sub);padding:20px">
-				<i data-lucide="message-square" style="width:52px;height:52px;display:block;margin:0 auto 12px"></i>
-				<p style="font-size:15px;margin:0">Select a chat to start messaging</p>
+		<div class="search-wrap">
+			<input type="text" id="contactSearch" class="input-glass" placeholder="Search people & groups…" oninput="handleSearch(this.value)" autocomplete="off">
+			<div id="searchResults" class="search-results glass" style="display:none"></div>
+		</div>
+
+		<div id="recentChatsList" style="flex:1;overflow-y:auto;padding-bottom:4px"></div>
+
+		<div class="tab-bar">
+			<div class="tab active" id="tab-chats" onclick="showTab('chats')"><i data-lucide="message-circle"></i>Chats</div>
+			<div class="tab" id="tab-profile" onclick="showTab('profile')"><i data-lucide="user"></i>Profile</div>
+			<div class="tab" id="tab-settings" onclick="showTab('settings')"><i data-lucide="settings"></i>Settings</div>
+			
+			<div class="tab" id="tab-admin" onclick="showTab('admin')" style="display:none;position:relative;">
+				<i data-lucide="shield"></i>Admin
+				<span id="adminBadge" style="display:none;position:absolute;top:0;right:0;background:#ff3b30;color:#fff;border-radius:10px;padding:2px 5px;font-size:10px;font-weight:700"></span>
 			</div>
-			<div id="activeChat" style="display:none;flex-direction:column;height:100%">
-				<!-- CLEAN HEADER: back + avatar + name/status + single ⋯ menu -->
-				<div class="header top-header" style="padding-left:12px;padding-right:12px;padding-bottom:10px;gap:8px;flex-wrap:nowrap;min-height:58px">
-					<button class="btn" style="padding:8px;flex-shrink:0" onclick="closeChat()"><i data-lucide="chevron-left"></i></button>
-					<img id="chatHeaderPfp" class="avatar" style="width:40px;height:40px;flex-shrink:0;cursor:pointer" onclick="openChatInfo()">
-					<div style="flex:1;min-width:0;cursor:pointer;overflow:hidden" onclick="openChatInfo()">
-						<div id="chatHeaderName" style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">Name</div>
-						<div id="chatHeaderSub" class="muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px"></div>
-					</div>
-					<!-- Single dots button — everything inside the dropdown -->
-					<button class="btn" style="padding:9px;flex-shrink:0;width:38px;height:38px" title="Options" onclick="openChatOptions(event)"><i data-lucide="more-vertical"></i></button>
+		</div>
+	</div>
+
+	<div id="chatPanel" class="panel glass">
+		<div id="noChatSelected" style="margin:auto;text-align:center;color:var(--sub);padding:20px">
+			<i data-lucide="message-square" style="width:52px;height:52px;display:block;margin:0 auto 12px"></i>
+			<p style="font-size:15px;margin:0">Select a chat to start messaging</p>
+		</div>
+		<div id="activeChat" style="display:none;flex-direction:column;height:100%">
+			<div class="header top-header" style="padding-left:12px;padding-right:12px;padding-bottom:10px;gap:8px;flex-wrap:nowrap;min-height:58px">
+				<button class="btn" style="padding:8px;flex-shrink:0" onclick="closeChat()"><i data-lucide="chevron-left"></i></button>
+				<img id="chatHeaderPfp" class="avatar" style="width:40px;height:40px;flex-shrink:0;cursor:pointer" onclick="openChatInfo()">
+				<div style="flex:1;min-width:0;cursor:pointer;overflow:hidden" onclick="openChatInfo()">
+					<div id="chatHeaderName" style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">Name</div>
+					<div id="chatHeaderSub" class="muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px"></div>
 				</div>
-				<div id="chatBox" class="messages"></div>
-				<!-- FIX 1: Added chat-input-bar class for bottom safe area -->
-				<div class="header chat-input-bar" style="border-top:1px solid var(--glass-border);border-bottom:none;gap:6px;padding:10px 12px">
-					<button class="btn" style="padding:8px;flex-shrink:0" onclick="document.getElementById('mediaUpload').click()"><i data-lucide="paperclip"></i></button>
-					<input type="file" id="mediaUpload" style="display:none" onchange="attachMedia(this)">
-					<!-- Hidden native audio recorder fallback for iOS PWA -->
-					<input type="file" id="voiceFileFallback" accept="audio/*" capture="microphone" style="display:none" onchange="_onVoiceFallbackFile(this)">
-					<span id="mediaIndicator" style="display:none;font-size:11px;color:var(--prim);white-space:nowrap;flex-shrink:0">📎</span>
-					<!-- FIX 2: Changed onkeydown to use === instead of = so Enter sends, other keys don't -->
-					<input type="text" id="chatInput" class="input-glass" placeholder="Message…" style="flex:1;margin:0;padding:10px 12px;min-width:0" onkeydown="handleChatInputKey(event)">
-					<!-- FIX 3: Voice note button uses click-to-toggle instead of hold (better for iOS PWA) -->
-					<button class="btn" style="padding:8px;flex-shrink:0" id="voiceNoteBtn" title="Voice Note" onclick="toggleVoiceNote()"><i data-lucide="mic"></i></button>
-					<button class="btn btn-prim" style="padding:8px;flex-shrink:0" onclick="sendMsg()"><i data-lucide="send"></i></button>
-				</div>
+				<button class="btn" style="padding:9px;flex-shrink:0;width:38px;height:38px" title="Options" onclick="openChatOptions(event)"><i data-lucide="more-vertical"></i></button>
+			</div>
+			
+			<div id="chatBox" class="messages"></div>
+			
+			<div class="header chat-input-bar" style="gap:6px;padding:10px 12px">
+				<button class="btn" style="padding:8px;flex-shrink:0" onclick="document.getElementById('mediaUpload').click()"><i data-lucide="paperclip"></i></button>
+				<input type="file" id="mediaUpload" style="display:none" onchange="attachMedia(this)">
+				<input type="file" id="voiceFileFallback" accept="audio/*" capture="microphone" style="display:none" onchange="_onVoiceFallbackFile(this)">
+				<span id="mediaIndicator" style="display:none;font-size:11px;color:var(--prim);white-space:nowrap;flex-shrink:0">📎</span>
+				<input type="text" id="chatInput" class="input-glass" placeholder="Message…" style="flex:1;margin:0;padding:10px 12px;min-width:0" onkeydown="handleChatInputKey(event)">
+				<button class="btn" style="padding:8px;flex-shrink:0" id="voiceNoteBtn" title="Voice Note" onclick="toggleVoiceNote()"><i data-lucide="mic"></i></button>
+				<button class="btn btn-prim" style="padding:8px;flex-shrink:0" onclick="sendMsg()"><i data-lucide="send"></i></button>
 			</div>
 		</div>
 	</div>
 </div>
 
-<!-- JITSI -->
 <div id="callPanel">
 	<div class="call-header">
 		<span id="callTitle">Call</span>
@@ -418,7 +348,6 @@
 	<iframe id="jitsiFrame" allow="camera;microphone;fullscreen;display-capture"></iframe>
 </div>
 
-<!-- MESSAGE CONTEXT MENU -->
 <div id="ctxMenu" class="ctx-menu glass" style="display:none">
 	<div class="ctx-item" id="ctxCopyBtn" onclick="ctxCopy()"><i data-lucide="copy"></i> Copy</div>
 	<div class="ctx-item" id="ctxEditBtn" onclick="ctxEdit()"><i data-lucide="pencil"></i> Edit</div>
@@ -427,7 +356,6 @@
 	<div class="ctx-item danger" id="ctxDelAllBtn" onclick="ctxDeleteForAll()"><i data-lucide="trash-2"></i> Delete for Everyone</div>
 </div>
 
-<!-- CHAT OPTIONS DROPDOWN (⋯ button) — all actions here -->
 <div id="chatOptionsMenu" class="ctx-menu glass" style="display:none;min-width:200px">
 	<div class="ctx-item" onclick="chatOptCall('audio')"><i data-lucide="phone"></i> Voice Call</div>
 	<div class="ctx-item" onclick="chatOptCall('video')"><i data-lucide="video"></i> Video Call</div>
@@ -440,7 +368,6 @@
 	<div class="ctx-item danger" onclick="chatOptDelete()"><i data-lucide="trash-2"></i> Delete Chat</div>
 </div>
 
-<!-- WALLPAPER PICKER MODAL -->
 <div id="wallpaperModal" class="modal-overlay">
 	<div class="modal-box glass" style="max-width:420px">
 		<div class="modal-header"><h2>Chat Wallpaper</h2><button class="btn" onclick="closeOverlay('wallpaperModal')"><i data-lucide="x"></i></button></div>
@@ -449,7 +376,6 @@
 	</div>
 </div>
 
-<!-- USER PROFILE VIEW MODAL -->
 <div id="userViewModal" class="modal-overlay">
 	<div class="modal-box glass" style="max-width:400px">
 		<div class="modal-header">
@@ -466,25 +392,21 @@
 	</div>
 </div>
 
-<!-- GROUP SETTINGS MODAL -->
 <div id="groupSettingsModal" class="modal-overlay">
 	<div class="modal-box glass" style="max-width:480px">
 		<div class="modal-header">
 			<h2>Group Info</h2>
 			<button class="btn" onclick="closeOverlay('groupSettingsModal')"><i data-lucide="x"></i></button>
 		</div>
-		<!-- Banner -->
 		<div class="group-banner">
 			<div class="gi" id="gsIcon">👥</div>
 			<h3 id="gsName"></h3>
 			<p id="gsDesc" style="max-width:320px"></p>
 		</div>
-		<!-- Rules -->
 		<div id="gsRulesWrap" class="settings-section" style="margin-top:16px;display:none">
 			<h3>Rules</h3>
 			<div id="gsRules" style="font-size:13px;padding:12px;border-radius:12px;background:var(--card-bg);line-height:1.6"></div>
 		</div>
-		<!-- Members -->
 		<div class="settings-section" style="margin-top:16px">
 			<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
 				<h3 style="margin:0">Members</h3>
@@ -492,7 +414,6 @@
 			</div>
 			<div id="gsMembersList"></div>
 		</div>
-		<!-- Admin: edit group -->
 		<div id="gsEditSection" style="display:none">
 			<div class="ctx-sep" style="margin:16px 0"></div>
 			<div class="settings-section">
@@ -507,22 +428,6 @@
 	</div>
 </div>
 
-<!-- ADD MEMBER TO GROUP MODAL -->
-<div id="addMemberModal" class="modal-overlay" style="z-index:600">
-	<div class="modal-box glass" style="max-width:400px">
-		<div class="modal-header">
-			<h2>Add Members</h2>
-			<button class="btn" onclick="closeOverlay('addMemberModal')"><i data-lucide="x"></i></button>
-		</div>
-		<div class="form-group">
-			<input type="text" id="addMemberSearch" class="input-glass" placeholder="Search users…" oninput="renderAddMemberList(this.value)">
-		</div>
-		<div id="addMemberList" style="max-height:300px;overflow-y:auto"></div>
-		<button class="btn btn-prim" style="width:100%;margin-top:14px" onclick="confirmAddMembers()">Add Selected</button>
-	</div>
-</div>
-
-<!-- PROFILE MODAL -->
 <div id="profileModal" class="modal-overlay">
 	<div class="modal-box glass">
 		<div class="modal-header"><h2>My Profile</h2><button class="btn" onclick="closeOverlay('profileModal')"><i data-lucide="x"></i></button></div>
@@ -543,22 +448,16 @@
 			<button class="btn btn-prim" style="width:100%" onclick="saveProfile()">Save Changes</button>
 		</div>
 		<div class="settings-section">
-			<h3>Change Password</h3>
-			<div class="form-group"><label>New Password</label><input type="password" id="newPassInput" class="input-glass" placeholder="New password"></div>
-			<div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassInput" class="input-glass" placeholder="Confirm new password"></div>
-			<button class="btn btn-prim" style="width:100%" onclick="changePassword()">Update Password</button>
-		</div>
-		<div class="settings-section">
 			<h3>Account</h3>
 			<button class="btn btn-danger" style="width:100%" onclick="location.reload()"><i data-lucide="log-out"></i> Log Out</button>
 		</div>
 	</div>
 </div>
 
-<!-- APP SETTINGS MODAL -->
 <div id="appSettingsModal" class="modal-overlay">
 	<div class="modal-box glass">
 		<div class="modal-header"><h2>Settings</h2><button class="btn" onclick="closeOverlay('appSettingsModal')"><i data-lucide="x"></i></button></div>
+		
 		<div class="settings-section">
 			<h3>Appearance</h3>
 			<div class="settings-row">
@@ -566,6 +465,7 @@
 				<label class="toggle"><input type="checkbox" id="darkModeToggle" onchange="applyThemeToggle(this)"><span class="toggle-slider"></span></label>
 			</div>
 		</div>
+		
 		<div class="settings-section">
 			<h3>Notifications</h3>
 			<div class="settings-row">
@@ -577,6 +477,7 @@
 				<label class="toggle"><input type="checkbox" id="soundToggle" checked><span class="toggle-slider"></span></label>
 			</div>
 		</div>
+		
 		<div class="settings-section">
 			<h3>Privacy</h3>
 			<div class="settings-row">
@@ -591,7 +492,6 @@
 	</div>
 </div>
 
-<!-- NEW CHAT / GROUP MODAL -->
 <div id="newChatModal" class="modal-overlay">
 	<div class="modal-box glass">
 		<div class="modal-header"><h2>New Conversation</h2><button class="btn" onclick="closeOverlay('newChatModal')"><i data-lucide="x"></i></button></div>
@@ -611,7 +511,6 @@
 			<div class="form-group"><label>Group Icon (Emoji)</label><input type="text" id="newGroupIcon" class="input-glass" placeholder="🚀" maxlength="4"></div>
 			<div class="form-group"><label>Description</label><input type="text" id="newGroupDesc" class="input-glass" placeholder="What's this group about?"></div>
 			<div class="form-group"><label>Rules</label><textarea id="newGroupRules" class="input-glass" rows="3" placeholder="Group rules…"></textarea></div>
-			<!-- Member Picker -->
 			<div class="form-group">
 				<label>Add Members</label>
 				<input type="text" id="newGroupMemberSearch" class="input-glass" placeholder="Search to add members…" oninput="renderNewGroupMemberPicker(this.value)">
@@ -621,21 +520,25 @@
 				<div style="font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Selected Members</div>
 				<div id="newGroupSelectedChips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
 			</div>
-			<div class="settings-section" style="margin-top:16px">
-				<h3>Permissions</h3>
-				<div class="settings-row"><div class="settings-row-label">Who can add members</div>
-					<select class="input-glass" id="permAddMembers" style="width:auto;padding:7px 10px"><option value="admins">Admins only</option><option value="all">Everyone</option></select></div>
-				<div class="settings-row" style="margin-top:8px"><div class="settings-row-label">Who can remove members</div>
-					<select class="input-glass" id="permRemoveMembers" style="width:auto;padding:7px 10px"><option value="admins">Admins only</option><option value="all">Everyone</option></select></div>
-				<div class="settings-row" style="margin-top:8px"><div class="settings-row-label">Who can send messages</div>
-					<select class="input-glass" id="permSendMessages" style="width:auto;padding:7px 10px"><option value="all">Everyone</option><option value="admins">Admins only</option></select></div>
-			</div>
 			<button class="btn btn-prim" style="width:100%;margin-top:12px" onclick="createGroup()"><i data-lucide="users"></i> Create Group</button>
 		</div>
 	</div>
 </div>
 
-<!-- ADMIN CONSOLE -->
+<div id="addMemberModal" class="modal-overlay" style="z-index:600">
+	<div class="modal-box glass" style="max-width:400px">
+		<div class="modal-header">
+			<h2>Add Members</h2>
+			<button class="btn" onclick="closeOverlay('addMemberModal')"><i data-lucide="x"></i></button>
+		</div>
+		<div class="form-group">
+			<input type="text" id="addMemberSearch" class="input-glass" placeholder="Search users…" oninput="renderAddMemberList(this.value)">
+		</div>
+		<div id="addMemberList" style="max-height:300px;overflow-y:auto"></div>
+		<button class="btn btn-prim" style="width:100%;margin-top:14px" onclick="confirmAddMembers()">Add Selected</button>
+	</div>
+</div>
+
 <div id="adminModal" class="modal-overlay">
 	<div class="modal-box glass" style="max-width:860px;width:95%;max-height:92vh">
 		<div class="modal-header"><h2>⚙️ Admin Console</h2><button class="btn" onclick="closeOverlay('adminModal')"><i data-lucide="x"></i></button></div>
@@ -644,7 +547,6 @@
 			<div class="admin-tab" id="adminTab-groups" onclick="switchAdminTab('groups')">Groups</div>
 		</div>
 
-		<!-- USERS TAB -->
 		<div id="adminUsersPanel">
 			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
 				<input type="text" id="adminUserSearch" class="input-glass" style="max-width:260px;padding:9px 12px" placeholder="Search users…" oninput="renderAdminUsers()">
@@ -658,13 +560,17 @@
 					<div class="form-group"><label>Account (Email / Phone)</label><input type="text" id="adminUserAccount" class="input-glass" placeholder="Email or phone"></div>
 				</div>
 				<div class="form-row">
-					<div class="form-group"><label>Password <span id="adminPassNote" style="color:var(--prim);font-size:10px">(required for new)</span></label><input type="password" id="adminUserPass" class="input-glass" placeholder="Leave blank to keep existing"></div>
+					<div class="form-group"><label>Password</label><input type="password" id="adminUserPass" class="input-glass" placeholder="Leave blank to keep existing"></div>
 					<div class="form-group"><label>Job Title</label><input type="text" id="adminUserJob" class="input-glass" placeholder="Job title"></div>
 				</div>
 				<div class="form-row">
 					<div class="form-group"><label>Phone</label><input type="text" id="adminUserPhone" class="input-glass" placeholder="Phone number"></div>
 					<div class="form-group"><label>Role</label>
-						<select id="adminUserRole" class="input-glass"><option value="user">User</option><option value="admin">Admin</option></select>
+						<select id="adminUserRole" class="input-glass">
+							<option value="user">User</option>
+							<option value="admin">Admin</option>
+							<option value="pending">Pending</option>
+						</select>
 					</div>
 				</div>
 				<div style="display:flex;gap:8px;margin-top:4px">
@@ -673,12 +579,13 @@
 				</div>
 			</div>
 			<div style="overflow-x:auto">
-				<table class="admin-table"><thead><tr><th>Name</th><th>Account</th><th>Job</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
-				<tbody id="adminUsersTbody"></tbody></table>
+				<table class="admin-table">
+					<thead><tr><th>Name</th><th>Account</th><th>Job</th><th>Phone</th><th>Status/Role</th><th>Actions</th></tr></thead>
+					<tbody id="adminUsersTbody"></tbody>
+				</table>
 			</div>
 		</div>
 
-		<!-- GROUPS TAB -->
 		<div id="adminGroupsPanel" style="display:none">
 			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
 				<input type="text" id="adminGroupSearch" class="input-glass" style="max-width:260px;padding:9px 12px" placeholder="Search groups…" oninput="renderAdminGroups()">
@@ -693,10 +600,6 @@
 				</div>
 				<div class="form-group"><label>Description</label><input type="text" id="adminGroupDesc" class="input-glass" placeholder="Group description"></div>
 				<div class="form-group"><label>Rules</label><textarea id="adminGroupRules" class="input-glass" rows="2" placeholder="Group rules…"></textarea></div>
-				<div class="form-row">
-					<div class="form-group"><label>Who Can Add</label><select id="adminGroupPermAdd" class="input-glass"><option value="admins">Admins only</option><option value="all">Anyone</option></select></div>
-					<div class="form-group"><label>Who Can Remove</label><select id="adminGroupPermRemove" class="input-glass"><option value="admins">Admins only</option><option value="all">Anyone</option></select></div>
-				</div>
 				<div style="display:flex;gap:8px;margin-top:4px">
 					<button class="btn btn-prim" onclick="saveGroup()">Save</button>
 					<button class="btn" onclick="document.getElementById('adminGroupFormWrap').style.display='none'">Cancel</button>
@@ -710,12 +613,13 @@
 	</div>
 </div>
 
-<!-- TOAST -->
 <div id="toast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(0,0,0,0.82);color:#fff;padding:11px 24px;border-radius:24px;font-size:13px;font-weight:500;z-index:9999;transition:0.3s;pointer-events:none;backdrop-filter:blur(12px);opacity:0;white-space:nowrap"></div>
 
 <script>
-// =================== CONFIG ===================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEQhj9oyz8xwlH-0j2w2FR68-O7N_zwUoDFtwOHgQoLNWArxZ76r9OrX9wWRFge08U/exec';
+// =================== CONFIG & SUPABASE INITIALIZATION ===================
+const SUPABASE_URL = 'https://lzobdqlbsxjlupyewdqq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b2JkcWxic3hqbHVweWV3ZHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTY0MDQsImV4cCI6MjA4OTU3MjQwNH0.fH-bV3QiQUbk_6L-clwwdHlZTnTIYAIJeKysMhUlBIs';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // =================== STATE ===================
 let user = null, partner = null, isRoom = false, chatInterval = null;
@@ -727,33 +631,259 @@ let searchTimer = null;
 // =================== API ===================
 async function api(payload) {
 	try {
-		const r = await fetch(SCRIPT_URL, {
-			method: 'POST',
-			body: JSON.stringify(payload),
-			headers: { 'Content-Type': 'text/plain' }
-		});
-		return await r.json();
-	} catch(e) {
-		console.error('API error:', e);
+		switch (payload.action) {
+			case 'login': {
+				const ident = payload.identifier.trim();
+				const pass = payload.password;
+
+				let { data, error } = await supabaseClient.from('accounts').select('*').eq('email', ident).eq('password', pass);
+				if (!data || data.length === 0) {
+					const phoneRes = await supabaseClient.from('accounts').select('*').eq('phone', ident).eq('password', pass);
+					data = phoneRes.data; error = phoneRes.error || error;
+				}
+				if (error) return { status: 'error', message: `Database error: ${error.message}` };
+
+				if (data && data.length > 0) {
+					const d = data[0];
+					// ── ACCOUNT APPROVAL CHECK ──
+					if (d.role === 'pending') {
+						return { status: 'error', message: 'Your account is currently pending admin approval.' };
+					}
+
+					return { status: 'success', user: {
+						name: d.name, email: d.email, phone: d.phone, job: d.job,
+						role: d.role, type: d.role, pfp: d.photo, status: d.status,
+						theme: d.theme, lastSeen: d.last_seen
+					}};
+				}
+				return { status: 'error', message: 'Invalid credentials. Please verify your email/phone and password.' };
+			}
+
+			// ── NEW: USER REQUEST ACCOUNT ──
+			case 'requestAccount': {
+				const { error } = await supabaseClient.from('accounts').insert([{
+					name: payload.name, email: payload.email, password: payload.password,
+					phone: payload.phone, job: payload.job, role: 'pending'
+				}]);
+				if (error) return { status: 'error', message: error.message };
+				return { status: 'success' };
+			}
+
+			// ── NEW: ADMIN APPROVE ACCOUNT ──
+			case 'approveUser': {
+				const { error } = await supabaseClient.from('accounts').update({ role: 'user' }).eq('email', payload.email);
+				if (error) return { status: 'error', message: error.message };
+				return { status: 'success' };
+			}
+
+			case 'getProfiles': {
+				const { data } = await supabaseClient.from('accounts').select('*');
+				const profiles = (data || []).map(d => ({
+					name: d.name, email: d.email, phone: d.phone, job: d.job,
+					role: d.role, type: d.role, pfp: d.photo, status: d.status,
+					theme: d.theme, lastSeen: d.last_seen
+				}));
+				return { status: 'success', profiles };
+			}
+
+			case 'updateProfile': {
+				const updates = {};
+				if (payload.name) updates.name = payload.name;
+				if (payload.email) updates.email = payload.email;
+				if (payload.phone) updates.phone = payload.phone;
+				if (payload.job) updates.job = payload.job;
+				if (payload.pfp !== undefined) updates.photo = payload.pfp;
+				if (payload.status !== undefined) updates.status = payload.status;
+				if (payload.theme) updates.theme = payload.theme;
+				if (payload.lastSeen !== undefined) updates.last_seen = payload.lastSeen;
+				if (payload.password) updates.password = payload.password;
+				if (payload.role) updates.role = payload.role;
+
+				const { error } = await supabaseClient.from('accounts').update(updates).eq('email', payload.oldEmail);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'addUser': {
+				const { error } = await supabaseClient.from('accounts').insert([{
+					name: payload.name, email: payload.email, password: payload.password,
+					phone: payload.phone, job: payload.job, role: payload.type || 'user'
+				}]);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'deleteUser': {
+				const { error } = await supabaseClient.from('accounts').delete().eq('name', payload.name);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'getRooms': {
+				const { data } = await supabaseClient.from('rooms').select('*');
+				return { status: 'success', rooms: data || [] };
+			}
+
+			case 'addRoom': {
+				const { error } = await supabaseClient.from('rooms').insert([{
+					name: payload.name, icon: payload.icon, description: payload.description,
+					rules: payload.rules, members: payload.members
+				}]);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'adminEditRoom': {
+				const rUpdates = {};
+				if (payload.newName) rUpdates.name = payload.newName;
+				if (payload.icon) rUpdates.icon = payload.icon;
+				if (payload.description !== undefined) rUpdates.description = payload.description;
+				if (payload.rules !== undefined) rUpdates.rules = payload.rules;
+				if (payload.members) rUpdates.members = payload.members;
+				
+				const { error } = await supabaseClient.from('rooms').update(rUpdates).eq('name', payload.oldName);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'deleteRoom': {
+				const { error } = await supabaseClient.from('rooms').delete().eq('name', payload.name);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'getMessages': {
+				let query = supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+				if (payload.isRoom) {
+					query = query.eq('isroom', true).eq('receiver', payload.partner);
+				} else {
+					query = query.eq('isroom', false).in('sender', [payload.me, payload.partner]).in('receiver', [payload.me, payload.partner]);
+				}
+				const { data, error } = await query;
+				if (error) throw error;
+
+				const mappedMsgs = (data || []).map(m => ({
+					...m, msgId: m.msgid, isRoom: m.isroom 
+				}));
+				return { status: 'success', messages: mappedMsgs };
+			}
+
+			case 'sendMessage': {
+				const msgId = Date.now().toString() + Math.floor(Math.random()*1000);
+				const timeStr = new Date().toLocaleString('en-GB', { hour:'2-digit', minute:'2-digit' });
+				const { error } = await supabaseClient.from('messages').insert([{
+					msgid: msgId, sender: payload.sender, receiver: payload.receiver,
+					text: payload.text, media: payload.media, isroom: payload.isRoom,
+					status: 'sent', time: timeStr
+				}]);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'editMessage': {
+				const { error } = await supabaseClient.from('messages').update({ text: payload.newText, status: 'edited' }).eq('msgid', payload.msgId);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'deleteMessage': {
+				const { error } = await supabaseClient.from('messages').update({ status: 'deleted', text: '', media: '' }).eq('msgid', payload.msgId);
+				if (error) throw error;
+				return { status: 'success' };
+			}
+
+			case 'clearChat': {
+				if (payload.isRoom) {
+					 await supabaseClient.from('messages').delete().eq('isroom', true).eq('receiver', payload.partner);
+				} else {
+					 await supabaseClient.from('messages').delete()
+						.eq('isroom', false)
+						.in('sender', [payload.me, payload.partner])
+						.in('receiver', [payload.me, payload.partner]);
+				}
+				return { status: 'success' };
+			}
+
+			case 'deleteChat': { return { status: 'success' }; }
+
+			case 'getRecentChats': {
+				const { data: dataSent, error: err1 } = await supabaseClient.from('messages').select('*').eq('sender', payload.me).order('created_at', { ascending: false }).limit(200);
+				const { data: dataRec, error: err2 }  = await supabaseClient.from('messages').select('*').eq('receiver', payload.me).order('created_at', { ascending: false }).limit(200);
+
+				if (err1) throw err1; if (err2) throw err2;
+
+				const allMsgs = [...(dataSent || []), ...(dataRec || [])]
+					.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+				const map = new Map();
+				allMsgs.forEach(m => {
+					const isRm = m.isroom === true;
+					const p = isRm ? m.receiver : (m.sender === payload.me ? m.receiver : m.sender);
+					if (!map.has(p)) {
+						map.set(p, {
+							partner: p, isRoom: isRm,
+							lastMsg: m.status === 'deleted' ? '🚫 Deleted' : (m.text || '📎 Media'),
+							time: m.time
+						});
+					}
+				});
+
+				const { data: myRooms } = await supabaseClient.from('rooms').select('*').ilike('members', `%${payload.me}%`);
+				(myRooms || []).forEach(r => {
+					if (!map.has(r.name)) map.set(r.name, { partner: r.name, isRoom: true, lastMsg: 'No messages yet', time: '' });
+				});
+
+				return { status: 'success', recents: Array.from(map.values()) };
+			}
+
+			default:
+				return { status: 'error', message: 'Unknown action' };
+		}
+	} catch (e) {
+		console.error('Supabase API error:', e);
 		return { status: 'error', message: e.message };
 	}
 }
 
-// =================== TOAST ===================
-function toast(msg, ms = 2600) {
-	const el = document.getElementById('toast');
-	el.textContent = msg;
-	el.style.opacity = '1';
-	el.style.transform = 'translateX(-50%) translateY(0)';
-	clearTimeout(el._t);
-	el._t = setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(60px)'; }, ms);
+// =================== AUTH & ACCOUNT CREATION ===================
+function toggleSignup(show) {
+	document.getElementById('loginFormWrap').style.display = show ? 'none' : 'block';
+	document.getElementById('signupFormWrap').style.display = show ? 'block' : 'none';
 }
 
-function esc(s) {
-	return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function submitSignup() {
+	const name = document.getElementById('regName').value.trim();
+	const email = document.getElementById('regEmail').value.trim();
+	const phone = document.getElementById('regPhone').value.trim();
+	const job = document.getElementById('regJob').value.trim();
+	const pass = document.getElementById('regPass').value;
+	const btn = document.getElementById('signupBtn');
+
+	if (!name || (!email && !phone) || !pass) {
+		toast('Name, Password, and Email (or Phone) are required.');
+		return;
+	}
+
+	btn.textContent = 'Sending...'; btn.disabled = true;
+
+	const res = await api({ action: 'requestAccount', name, email, phone, job, password: pass });
+	
+	btn.textContent = 'Send Request'; btn.disabled = false;
+
+	if (res.status === 'success') {
+		toast('Account requested! An admin will review it soon.', 4000);
+		toggleSignup(false);
+		// Clear fields
+		document.getElementById('regName').value = '';
+		document.getElementById('regEmail').value = '';
+		document.getElementById('regPhone').value = '';
+		document.getElementById('regJob').value = '';
+		document.getElementById('regPass').value = '';
+	} else {
+		toast('Failed to request account: ' + (res.message || 'Unknown error'));
+	}
 }
 
-// =================== AUTH ===================
 async function handleLogin() {
 	const btn = document.getElementById('loginBtn');
 	const errEl = document.getElementById('loginErr');
@@ -771,22 +901,60 @@ async function handleLogin() {
 		document.getElementById('loginScreen').classList.remove('active');
 		document.getElementById('mainApp').style.display = 'flex';
 		if (user.theme === 'dark') { document.body.classList.add('theme-dark'); document.getElementById('darkModeToggle').checked = true; }
-		if ((user.type||'').toLowerCase() === 'admin') document.getElementById('tab-admin').style.display = 'flex';
+		
+		// Show Admin tab if admin
+		if ((user.type||user.role||'').toLowerCase() === 'admin') {
+			document.getElementById('tab-admin').style.display = 'flex';
+		}
+
 		updateMyThumb();
 		fetchRecentChats();
-		api({ action: 'getProfiles' }).then(r => { allUsers = r.profiles || []; });
+		
+		// Fetch profiles & rooms, then update the admin badge immediately
+		api({ action: 'getProfiles' }).then(r => { 
+			allUsers = r.profiles || []; 
+			updateAdminBadge();
+		});
 		api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; });
+		
 		setInterval(fetchRecentChats, 10000);
+		
+		// Admin active check every 30s to see if new users requested accounts
 		markOnline(true);
-		setInterval(() => markOnline(true), 30000);
+		setInterval(async () => {
+			markOnline(true);
+			if (user && (user.type||user.role||'').toLowerCase() === 'admin') {
+				const r = await api({ action: 'getProfiles' });
+				allUsers = r.profiles || [];
+				updateAdminBadge();
+				if (document.getElementById('adminModal').classList.contains('active') && document.getElementById('adminUsersPanel').style.display !== 'none') {
+					renderAdminUsers();
+				}
+			}
+		}, 30000);
+
 		window.addEventListener('beforeunload', () => markOnline(false));
 		requestNotifications().then(startNotifPolling);
 		lucide.createIcons();
 	} else {
 		errEl.style.display = 'block';
-		btn.textContent = 'Continue'; btn.disabled = false;
+		errEl.textContent = res.message || 'Invalid credentials — please try again.';
+		btn.textContent = 'Sign In'; 
+		btn.disabled = false;
 	}
 }
+
+// =================== TOAST & UTILS ===================
+function toast(msg, ms = 2600) {
+	const el = document.getElementById('toast');
+	el.textContent = msg;
+	el.style.opacity = '1';
+	el.style.transform = 'translateX(-50%) translateY(0)';
+	clearTimeout(el._t);
+	el._t = setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(60px)'; }, ms);
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function markOnline(online) {
 	if (!user) return;
@@ -794,14 +962,21 @@ function markOnline(online) {
 		const ts = new Date().toLocaleString('en-GB', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short' });
 		api({ action: 'updateProfile', oldEmail: user.email, lastSeen: ts });
 	}
-	if (online) {
-		api({ action: 'updateProfile', oldEmail: user.email, lastSeen: '' });
-	}
+	if (online) { api({ action: 'updateProfile', oldEmail: user.email, lastSeen: '' }); }
 }
 
 function updateMyThumb() {
 	const src = user.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
 	document.getElementById('myPfpThumb').src = src;
+}
+
+function updateAdminBadge() {
+	const pendingCount = allUsers.filter(u => u.role === 'pending').length;
+	const badge = document.getElementById('adminBadge');
+	if (badge) {
+		badge.style.display = pendingCount > 0 ? 'flex' : 'none';
+		badge.textContent = pendingCount;
+	}
 }
 
 // =================== RECENT CHATS ===================
@@ -851,7 +1026,8 @@ function handleSearch(val) {
 		const q = val.toLowerCase();
 		const matched = [];
 		const seen = new Set();
-		allUsers.forEach(p => {
+		// Hide pending users from regular search
+		allUsers.filter(u => u.role !== 'pending').forEach(p => {
 			const n = (p.name||'').toLowerCase();
 			const e = (p.email||'').toLowerCase();
 			if (n.includes(q) || e.includes(q)) {
@@ -889,7 +1065,7 @@ function startChatFromSearch(name, isGrp) {
 
 document.addEventListener('click', e => {
 	if (!e.target.closest('.search-wrap')) document.getElementById('searchResults').style.display = 'none';
-	if (!e.target.closest('#ctxMenu'))         document.getElementById('ctxMenu').style.display = 'none';
+	if (!e.target.closest('#ctxMenu')) document.getElementById('ctxMenu').style.display = 'none';
 	if (!e.target.closest('#chatOptionsMenu') && !e.target.closest('[onclick*="openChatOptions"]'))
 		document.getElementById('chatOptionsMenu').style.display = 'none';
 });
@@ -903,6 +1079,7 @@ function startChat(name, isRm) {
 	document.getElementById('chatHeaderName').textContent = name;
 	const pProf = allUsers.find(u => u.name === name);
 	document.getElementById('chatHeaderPfp').src = (pProf && pProf.pfp) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
+	
 	if (isRoom) {
 		api({ action: 'getRooms' }).then(r => {
 			if (r.rooms) {
@@ -918,6 +1095,7 @@ function startChat(name, isRm) {
 	} else {
 		document.getElementById('chatHeaderSub').textContent = '…';
 	}
+	
 	clearInterval(chatInterval);
 	loadMessages().then(seedLastMsgIds);
 	loadChatWallpaper();
@@ -970,10 +1148,7 @@ async function loadMessages() {
 		const deleted = m.status === 'deleted';
 		const edited = m.status === 'edited';
 		return `<div class="bubble ${own?'out':'in'}" 
-			data-id="${esc(m.msgId)}" 
-			data-text="${esc(m.text)}" 
-			data-own="${own}" 
-			oncontextmenu="showCtx(event,this)">
+			data-id="${esc(m.msgId)}" data-text="${esc(m.text)}" data-own="${own}" oncontextmenu="showCtx(event,this)">
 			${isRoom && !own ? `<div style="font-size:11px;font-weight:700;color:var(--prim);margin-bottom:4px;cursor:pointer" onclick="openUserView('${esc(m.sender)}')">${esc(m.sender)}</div>` : ''}
 			${m.media ? renderMedia(m.media) : ''}
 			<div>${deleted ? '<span style="opacity:0.5;font-style:italic">🚫 Message deleted</span>' : esc(m.text||'')}</div>
@@ -990,21 +1165,30 @@ async function sendMsg() {
 	const inp = document.getElementById('chatInput');
 	const text = inp.value.trim();
 	if (!text && !pendingMedia) return;
+	
+	const savedText = text;
+	const savedMedia = pendingMedia;
+
 	inp.value = '';
 	const media = pendingMedia; pendingMedia = '';
 	document.getElementById('mediaIndicator').style.display = 'none';
 	document.getElementById('mediaIndicator').textContent = '📎 ready';
-	await api({ action: 'sendMessage', sender: user.name, receiver: partner, text, media, isRoom,
-		readReceipts: document.getElementById('readReceiptToggle')?.checked !== false });
+	
+	const res = await api({ action: 'sendMessage', sender: user.name, receiver: partner, text: savedText, media: savedMedia, isRoom, readReceipts: true });
+	
+	if (res.status === 'error') {
+		toast('Failed to send: ' + (res.message || 'Error'));
+		inp.value = savedText;
+		pendingMedia = savedMedia;
+		if (savedMedia) document.getElementById('mediaIndicator').style.display = 'inline';
+		return;
+	}
 	loadMessages();
 }
 
-// ── FIX 2: Proper Enter key handler ──────────────────────────────────────────
-// The original code used = (assignment) instead of === (comparison), which
-// evaluated to true for EVERY keypress. Now we correctly check key name.
 function handleChatInputKey(event) {
 	if (event.key === 'Enter' && !event.shiftKey) {
-		event.preventDefault(); // prevent newline on mobile
+		event.preventDefault(); 
 		sendMsg();
 	}
 }
@@ -1027,13 +1211,11 @@ function closeChat() {
 	document.getElementById('noChatSelected').style.display = 'block';
 }
 
-// =================== MESSAGE CONTEXT MENU ===================
+// =================== CONTEXT MENUS ===================
 function showCtx(e, el) {
 	e.preventDefault();
 	document.getElementById('chatOptionsMenu').style.display = 'none';
-	ctxMsgId  = el.dataset.id;
-	ctxMsgText = el.dataset.text;
-	ctxMsgOwn  = el.dataset.own === 'true';
+	ctxMsgId  = el.dataset.id; ctxMsgText = el.dataset.text; ctxMsgOwn  = el.dataset.own === 'true';
 	const menu = document.getElementById('ctxMenu');
 	document.getElementById('ctxEditBtn').style.display   = ctxMsgOwn ? 'flex' : 'none';
 	document.getElementById('ctxDelMeBtn').style.display  = 'flex';
@@ -1044,11 +1226,7 @@ function showCtx(e, el) {
 	lucide.createIcons();
 }
 
-function ctxCopy() {
-	navigator.clipboard.writeText(ctxMsgText||'').catch(()=>{});
-	toast('Copied ✓');
-	document.getElementById('ctxMenu').style.display = 'none';
-}
+function ctxCopy() { navigator.clipboard.writeText(ctxMsgText||'').catch(()=>{}); toast('Copied ✓'); document.getElementById('ctxMenu').style.display = 'none'; }
 
 function ctxEdit() {
 	document.getElementById('ctxMenu').style.display = 'none';
@@ -1062,8 +1240,7 @@ function ctxDeleteForMe() {
 	const el = document.querySelector(`.bubble[data-id="${CSS.escape(ctxMsgId)}"]`);
 	if (el) {
 		el.style.transition = 'opacity 0.25s, transform 0.25s';
-		el.style.opacity = '0';
-		el.style.transform = 'scale(0.92)';
+		el.style.opacity = '0'; el.style.transform = 'scale(0.92)';
 		setTimeout(() => el.remove(), 260);
 	}
 	toast('Message hidden');
@@ -1075,465 +1252,115 @@ function ctxDeleteForAll() {
 	api({ action: 'deleteMessage', msgId: ctxMsgId, receiver: partner, isRoom }).then(loadMessages);
 }
 
-// =================== CHAT OPTIONS MENU (⋯) ===================
 function openChatOptions(e) {
-	e.stopPropagation();
-	document.getElementById('ctxMenu').style.display = 'none';
+	e.stopPropagation(); document.getElementById('ctxMenu').style.display = 'none';
 	const menu = document.getElementById('chatOptionsMenu');
 	if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
 	menu.style.display = 'block';
-	const btn  = e.currentTarget;
-	const rect = btn.getBoundingClientRect();
-	// Position: below and aligned to right edge of button, keep inside viewport
-	const menuW = 210;
-	let left = rect.right - menuW;
-	if (left < 8) left = 8;
-	menu.style.left  = left + 'px';
-	menu.style.right = 'auto';
-	menu.style.top   = (rect.bottom + 6) + 'px';
+	const rect = e.currentTarget.getBoundingClientRect();
+	let left = rect.right - 210; if (left < 8) left = 8;
+	menu.style.left = left + 'px'; menu.style.top = (rect.bottom + 6) + 'px';
 	lucide.createIcons();
 }
 
-function chatOptCall(type) {
-	document.getElementById('chatOptionsMenu').style.display = 'none';
-	startCall(type);
-}
-
-function chatOptTheme() {
-	document.getElementById('chatOptionsMenu').style.display = 'none';
-	toggleTheme();
-}
-
-function chatOptInfo() {
-	document.getElementById('chatOptionsMenu').style.display = 'none';
-	openChatInfo();
-}
-
-// ── Wallpaper ─────────────────────────────────────────────────────────────
-const WALLPAPERS = [
-	{ name:'Ocean',    css:'linear-gradient(135deg,#1a6b8a,#0d3b54)' },
-	{ name:'Sunset',   css:'linear-gradient(135deg,#f97316,#be185d)' },
-	{ name:'Forest',   css:'linear-gradient(135deg,#14532d,#065f46)' },
-	{ name:'Lavender', css:'linear-gradient(135deg,#6d28d9,#4c1d95)' },
-	{ name:'Night',    css:'linear-gradient(135deg,#1e1b4b,#0f172a)' },
-	{ name:'Rose',     css:'linear-gradient(135deg,#fda4af,#fb7185)' },
-	{ name:'Sky',      css:'linear-gradient(135deg,#38bdf8,#0ea5e9)' },
-	{ name:'Sand',     css:'linear-gradient(135deg,#d97706,#f59e0b)' },
-	{ name:'Mint',     css:'linear-gradient(135deg,#6ee7b7,#34d399)' },
-];
-
-function chatOptWallpaper() {
-	document.getElementById('chatOptionsMenu').style.display = 'none';
-	const grid = document.getElementById('wallpaperGrid');
-	grid.innerHTML = WALLPAPERS.map((w,i) =>
-		`<div onclick="applyChatWallpaper(${i})" style="height:80px;border-radius:12px;cursor:pointer;background:${w.css};display:flex;align-items:flex-end;padding:6px;border:2px solid transparent;transition:0.15s" onmouseover="this.style.border='2px solid var(--prim)'" onmouseout="this.style.border='2px solid transparent'">
-			<span style="font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6)">${w.name}</span>
-		</div>`
-	).join('');
-	openOverlay('wallpaperModal');
-}
-
-function applyChatWallpaper(idx) {
-	const chatBox = document.getElementById('chatBox');
-	chatBox.style.background = WALLPAPERS[idx].css;
-	chatBox.style.backgroundAttachment = 'local';
-	// Persist per-chat
-	try { localStorage.setItem('wp_' + partner, WALLPAPERS[idx].css); } catch(e) {}
-	closeOverlay('wallpaperModal');
-	toast('Wallpaper applied ✓');
-}
-
-function removeChatWallpaper() {
-	document.getElementById('chatBox').style.background = '';
-	try { localStorage.removeItem('wp_' + partner); } catch(e) {}
-	closeOverlay('wallpaperModal');
-	toast('Wallpaper removed');
-}
-
-function loadChatWallpaper() {
-	try {
-		const saved = localStorage.getItem('wp_' + partner);
-		document.getElementById('chatBox').style.background = saved || '';
-	} catch(e) {}
-}
-
+function chatOptCall(type) { document.getElementById('chatOptionsMenu').style.display='none'; startCall(type); }
+function chatOptTheme() { document.getElementById('chatOptionsMenu').style.display='none'; toggleTheme(); }
+function chatOptInfo() { document.getElementById('chatOptionsMenu').style.display='none'; openChatInfo(); }
 function chatOptClear() {
 	document.getElementById('chatOptionsMenu').style.display = 'none';
 	if (!partner || !confirm(`Clear all messages with ${partner}?\nThis removes them for everyone and cannot be undone.`)) return;
 	api({ action: 'clearChat', me: user.name, partner, isRoom }).then(() => { toast('Chat cleared'); loadMessages(); });
 }
-
 async function chatOptDelete() {
 	document.getElementById('chatOptionsMenu').style.display = 'none';
 	if (!partner || !confirm(`Delete this entire chat with ${partner}?\nThis cannot be undone.`)) return;
 	await api({ action: 'clearChat',  me: user.name, partner, isRoom });
 	await api({ action: 'deleteChat', me: user.name, partner, isRoom });
-	toast('Chat deleted');
-	closeChat();
-	fetchRecentChats();
+	toast('Chat deleted'); closeChat(); fetchRecentChats();
 }
 
-// =================== VOICE NOTES — iOS PWA compatible ===================
-// iOS PWA (standalone mode) blocks getUserMedia in many cases even after
-// the user grants microphone permission at the OS level. The most reliable
-// cross-platform solution is:
-//   1. Try getUserMedia (works on Android, desktop, Safari browser)
-//   2. If that fails for ANY reason → fall back to <input type=file accept="audio/*" capture>
-//      which uses the native OS recorder and always works on iOS PWA.
+// ── Wallpaper ─────────────────────────────────────────────────────────────
+const WALLPAPERS = [
+	{ name:'Ocean', css:'linear-gradient(135deg,#1a6b8a,#0d3b54)' },
+	{ name:'Sunset', css:'linear-gradient(135deg,#f97316,#be185d)' },
+	{ name:'Forest', css:'linear-gradient(135deg,#14532d,#065f46)' },
+	{ name:'Lavender', css:'linear-gradient(135deg,#6d28d9,#4c1d95)' },
+	{ name:'Night', css:'linear-gradient(135deg,#1e1b4b,#0f172a)' },
+	{ name:'Mint', css:'linear-gradient(135deg,#6ee7b7,#34d399)' }
+];
+function chatOptWallpaper() {
+	document.getElementById('chatOptionsMenu').style.display = 'none';
+	document.getElementById('wallpaperGrid').innerHTML = WALLPAPERS.map((w,i) =>
+		`<div onclick="applyChatWallpaper(${i})" style="height:80px;border-radius:12px;cursor:pointer;background:${w.css};display:flex;align-items:flex-end;padding:6px;border:2px solid transparent;transition:0.15s">
+			<span style="font-size:10px;font-weight:600;color:#fff">${w.name}</span>
+		</div>`
+	).join('');
+	openOverlay('wallpaperModal');
+}
+function applyChatWallpaper(idx) {
+	document.getElementById('chatBox').style.background = WALLPAPERS[idx].css;
+	try { localStorage.setItem('wp_' + partner, WALLPAPERS[idx].css); } catch(e) {}
+	closeOverlay('wallpaperModal'); toast('Wallpaper applied ✓');
+}
+function removeChatWallpaper() {
+	document.getElementById('chatBox').style.background = '';
+	try { localStorage.removeItem('wp_' + partner); } catch(e) {}
+	closeOverlay('wallpaperModal'); toast('Wallpaper removed');
+}
+function loadChatWallpaper() {
+	try { document.getElementById('chatBox').style.background = localStorage.getItem('wp_' + partner) || ''; } catch(e) {}
+}
 
+// =================== VOICE NOTES ===================
 let _mediaRecorder = null, _voiceChunks = [], _voiceTimer = null, _voiceActive = false;
-
-function toggleVoiceNote() {
-	if (_voiceActive) {
-		stopVoiceRecording();
-	} else {
-		startVoiceRecording();
-	}
-}
-
+function toggleVoiceNote() { _voiceActive ? stopVoiceRecording() : startVoiceRecording(); }
 function startVoiceRecording() {
 	if (_voiceActive) return;
-
-	// Feature-detect getUserMedia
-	const hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-	const hasMediaRecorder = !!window.MediaRecorder;
-
-	if (!hasGUM || !hasMediaRecorder) {
-		// Fallback: native OS audio recorder via file input
-		_useNativeAudioPicker();
-		return;
-	}
-
-	// Try getUserMedia — wrap in a plain .then/.catch so it runs synchronously
-	// from the click event (avoids iOS "not from user gesture" rejection)
-	navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-		.then(function(stream) {
-			_startRecordingWithStream(stream);
-		})
-		.catch(function(err) {
-			console.warn('getUserMedia failed, using native picker:', err.name, err.message);
-			// ANY failure → fall back to native picker (handles NotAllowedError,
-			// NotSupportedError, and the iOS PWA "operation not supported" error)
-			_useNativeAudioPicker();
-		});
+	if (!window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { _useNativeAudioPicker(); return; }
+	navigator.mediaDevices.getUserMedia({ audio: true }).then(_startRecordingWithStream).catch(_useNativeAudioPicker);
 }
-
 function _startRecordingWithStream(stream) {
-	_voiceChunks = [];
-	_voiceActive = true;
-
+	_voiceChunks = []; _voiceActive = true;
 	const btn = document.getElementById('voiceNoteBtn');
-	btn.classList.add('recording-active');
-	btn.querySelector('i').setAttribute('data-lucide', 'mic-off');
-	lucide.createIcons();
+	btn.classList.add('recording-active'); btn.querySelector('i').setAttribute('data-lucide', 'mic-off'); lucide.createIcons();
 	toast('🎙 Recording… tap mic to stop', 120000);
-
-	// Pick best supported MIME type
-	const mimeType = [
-		'audio/webm;codecs=opus',
-		'audio/webm',
-		'audio/ogg;codecs=opus',
-		'audio/ogg',
-		'audio/mp4',
-		''
-	].find(t => !t || (function(){ try{ return MediaRecorder.isTypeSupported(t); }catch(e){ return false; } })());
-
-	try {
-		const options = mimeType ? { mimeType } : {};
-		_mediaRecorder = new MediaRecorder(stream, options);
-	} catch(e) {
-		// Some devices throw on options — try without
-		_mediaRecorder = new MediaRecorder(stream);
-	}
-
-	_mediaRecorder.ondataavailable = function(e) {
-		if (e.data && e.data.size > 0) _voiceChunks.push(e.data);
-	};
-
-	_mediaRecorder.onstop = function() {
-		stream.getTracks().forEach(function(t){ t.stop(); });
-		if (!_voiceChunks.length) { toast('No audio captured, try again'); return; }
-		const actualMime = _mediaRecorder.mimeType || 'audio/webm';
-		const blob = new Blob(_voiceChunks, { type: actualMime });
-		if (blob.size < 200) { toast('Recording too short, try again'); return; }
+	try { _mediaRecorder = new MediaRecorder(stream); } catch(e) { return; }
+	_mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _voiceChunks.push(e.data); };
+	_mediaRecorder.onstop = () => {
+		stream.getTracks().forEach(t => t.stop());
+		if (!_voiceChunks.length) { toast('No audio captured'); return; }
+		const blob = new Blob(_voiceChunks, { type: _mediaRecorder.mimeType || 'audio/webm' });
+		if (blob.size < 200) { toast('Recording too short'); return; }
 		_attachAudioBlob(blob);
 	};
-
-	_mediaRecorder.onerror = function(e) {
-		console.error('MediaRecorder error:', e);
-		toast('Recording error — try again');
-		resetVoiceBtn();
-	};
-
 	_mediaRecorder.start(250);
-
-	_voiceTimer = setTimeout(function() {
-		if (_voiceActive) { toast('Max 2 min reached'); stopVoiceRecording(); }
-	}, 120000);
+	_voiceTimer = setTimeout(() => { if (_voiceActive) stopVoiceRecording(); }, 120000);
 }
-
 function stopVoiceRecording() {
 	if (!_voiceActive) return;
-	clearTimeout(_voiceTimer);
-	_voiceActive = false;
-	resetVoiceBtn();
-	if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
-		_mediaRecorder.stop();
-	}
+	clearTimeout(_voiceTimer); _voiceActive = false;
+	const btn = document.getElementById('voiceNoteBtn'); btn.classList.remove('recording-active');
+	btn.querySelector('i').setAttribute('data-lucide', 'mic'); lucide.createIcons();
+	if (_mediaRecorder && _mediaRecorder.state !== 'inactive') _mediaRecorder.stop();
 }
-
-// Native OS audio recorder fallback (always works on iOS PWA)
-function _useNativeAudioPicker() {
-	toast('Opening voice recorder…', 3000);
-	const inp = document.getElementById('voiceFileFallback');
-	inp.value = '';
-	inp.click();
-}
-
-function _onVoiceFallbackFile(input) {
-	const file = input.files[0];
-	if (!file) { toast('No audio file selected'); return; }
-	_attachAudioBlob(file);
-}
-
+function _useNativeAudioPicker() { toast('Opening voice recorder…'); document.getElementById('voiceFileFallback').click(); }
+function _onVoiceFallbackFile(input) { if (input.files[0]) _attachAudioBlob(input.files[0]); }
 function _attachAudioBlob(blob) {
 	const reader = new FileReader();
-	reader.onload = function(ev) {
+	reader.onload = ev => {
 		pendingMedia = ev.target.result;
-		const indicator = document.getElementById('mediaIndicator');
-		indicator.style.display = 'inline';
-		indicator.textContent = '🎙 ready';
+		document.getElementById('mediaIndicator').style.display = 'inline';
+		document.getElementById('mediaIndicator').textContent = '🎙 ready';
 		toast('Voice note ready — tap Send ✓');
 	};
-	reader.onerror = function() { toast('Failed to read audio file'); };
 	reader.readAsDataURL(blob);
 }
 
-function resetVoiceBtn() {
-	const btn = document.getElementById('voiceNoteBtn');
-	btn.classList.remove('recording-active');
-	const icon = btn.querySelector('i');
-	if (icon) { icon.setAttribute('data-lucide', 'mic'); lucide.createIcons(); }
-}
-
-// =================== NOTIFICATIONS ===================
-let notifPermission = 'default';
-let lastMsgIds = new Set();
-
-async function requestNotifications() {
-	if (!('Notification' in window)) return;
-	if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
-	if (Notification.permission !== 'denied') {
-		const perm = await Notification.requestPermission();
-		notifPermission = perm;
-	}
-}
-
-function fireNotification(senderName, text, isGroup, groupName) {
-	if (Notification.permission !== 'granted') return;
-	if (senderName === user?.name) return;
-	if (!document.hidden && partner === (isGroup ? groupName : senderName)) return;
-
-	const title = isGroup ? `${groupName}` : senderName;
-	const body  = isGroup ? `${senderName}: ${text}` : text;
-	const icon  = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=007aff&color=fff`;
-
-	try {
-		const notif = new Notification(title, {
-			body  : body.length > 80 ? body.slice(0, 80) + '…' : body,
-			icon,
-			badge : icon,
-			tag   : `imind-${isGroup ? groupName : senderName}`,
-			renotify: true,
-			silent: false
-		});
-		notif.onclick = () => {
-			window.focus();
-			startChat(isGroup ? groupName : senderName, isGroup);
-			notif.close();
-		};
-	} catch(err) {
-		console.warn('Notification error:', err);
-	}
-}
-
-let notifPollInterval = null;
-function startNotifPolling() {
-	if (notifPollInterval) return;
-	notifPollInterval = setInterval(pollAllChatsForNotifs, 8000);
-}
-
-async function pollAllChatsForNotifs() {
-	if (!user || Notification.permission !== 'granted') return;
-	const res = await api({ action: 'getRecentChats', me: user.name });
-	const recents = res.recents || [];
-	for (const r of recents) {
-		const msgRes = await api({ action: 'getMessages', me: user.name, partner: r.partner, isRoom: r.isRoom });
-		const msgs = (msgRes.messages || []).slice(-5);
-		for (const m of msgs) {
-			if (!m.msgId || lastMsgIds.has(m.msgId)) continue;
-			lastMsgIds.add(m.msgId);
-			const msgTime = parseInt(m.msgId) || 0;
-			const age = Date.now() - msgTime;
-			if (age < 20000 && m.sender !== user.name) {
-				fireNotification(m.sender, m.text || '📎 Media', r.isRoom, r.partner);
-			}
-		}
-	}
-	if (lastMsgIds.size > 500) {
-		const arr = [...lastMsgIds];
-		lastMsgIds = new Set(arr.slice(-200));
-	}
-}
-
-// =================== CALLS ===================
-function startCall(type) {
-	if (!partner) { toast('No chat selected'); return; }
-	const roomBase = isRoom
-		? partner
-		: [user.name, partner].sort().join('--');
-	const room = 'iMindPro-' + roomBase.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g,'-').replace(/^-|-$/g,'');
-	const jitsiUrl = `https://meet.jit.si/${encodeURIComponent(room)}` +
-		`#config.startWithVideoMuted=${type==='audio'}` +
-		`&config.startWithAudioMuted=false` +
-		`&userInfo.displayName=${encodeURIComponent(user.name)}`;
-	document.getElementById('jitsiFrame').src = jitsiUrl;
-	document.getElementById('callTitle').textContent = (type==='audio'?'📞':'📹') + ' Call with ' + partner;
-	document.getElementById('callPanel').classList.add('active');
-	toast('Room: ' + room, 4000);
-}
-
-function endCall() {
-	document.getElementById('callPanel').classList.remove('active');
-	document.getElementById('jitsiFrame').src = '';
-}
-
-// =================== NEW CHAT ===================
-async function openNewChatModal() {
-	document.getElementById('newChatSearch').value = '';
-	newGroupSelected = new Set();
-	document.getElementById('newGroupSelectedWrap').style.display = 'none';
-	document.getElementById('newGroupMemberSearch').value = '';
-	document.getElementById('newGroupMemberList').innerHTML = '';
-	const r = await api({ action: 'getProfiles' });
-	allUsers = r.profiles || [];
-	searchNewChatUsers('');
-	openOverlay('newChatModal');
-}
-
-async function switchNewChatTab(tab) {
-	document.getElementById('newDirectTab').style.display = tab === 'direct' ? 'block' : 'none';
-	document.getElementById('newGroupTab').style.display = tab === 'group' ? 'block' : 'none';
-	document.getElementById('ncTab-direct').classList.toggle('active', tab === 'direct');
-	document.getElementById('ncTab-group').classList.toggle('active', tab === 'group');
-	if (tab === 'group') {
-		if (!allUsers.length) {
-			const r = await api({ action: 'getProfiles' });
-			allUsers = r.profiles || [];
-		}
-		renderNewGroupMemberPicker('');
-	}
-	if (tab === 'direct') {
-		if (!allUsers.length) {
-			const r = await api({ action: 'getProfiles' });
-			allUsers = r.profiles || [];
-		}
-		searchNewChatUsers(document.getElementById('newChatSearch').value || '');
-	}
-}
-
-function searchNewChatUsers(val) {
-	const container = document.getElementById('newChatUserResults');
-	const q = val.toLowerCase();
-	const list = allUsers.filter(p => p.name !== user.name && (!q || (p.name||'').toLowerCase().includes(q) || (p.email||'').toLowerCase().includes(q)));
-	if (!list.length) { container.innerHTML = '<div class="no-results">No users found</div>'; return; }
-	container.innerHTML = list.map(u => `
-		<div class="row" onclick="startDirectChat('${esc(u.name)}')">
-			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff" class="avatar" style="width:40px;height:40px">
-			<div>
-				<div style="font-weight:600">${esc(u.name)}</div>
-				<div class="muted" style="font-size:12px">${esc(u.status||u.job||'')}</div>
-			</div>
-		</div>`).join('');
-}
-
-function startDirectChat(name) { closeOverlay('newChatModal'); startChat(name, false); }
-
-async function createGroup() {
-	const name = document.getElementById('newGroupName').value.trim();
-	if (!name) { toast('Please enter a group name'); return; }
-	const icon  = document.getElementById('newGroupIcon').value.trim() || '👥';
-	const desc  = document.getElementById('newGroupDesc').value.trim();
-	const rules = document.getElementById('newGroupRules').value.trim();
-	const members = [user.name, ...[...newGroupSelected]].join(',');
-	const res = await api({ action: 'addRoom', name, members, icon, description: desc, rules });
-	if (res.status === 'success') {
-		toast('Group created! 🎉');
-		newGroupSelected = new Set();
-		closeOverlay('newChatModal');
-		allGroups = []; api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; });
-		fetchRecentChats();
-	} else { toast('Failed to create group: ' + (res.message||'')); }
-}
-
-// =================== PROFILE ===================
-function openProfilePanel() {
-	document.getElementById('profilePfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
-	document.getElementById('profileNameInput').value = user.name || '';
-	document.getElementById('profileEmailInput').value = user.email || '';
-	document.getElementById('profilePhoneInput').value = user.phone || '';
-	document.getElementById('profileStatusInput').value = user.status || '';
-	openOverlay('profileModal');
-}
-
-function handlePfpUpload(input) {
-	const file = input.files[0]; if (!file) return;
-	const reader = new FileReader();
-	reader.onload = e => {
-		user.pfp = e.target.result;
-		document.getElementById('profilePfpPreview').src = e.target.result;
-		updateMyThumb();
-		toast('Photo ready — Save Changes to apply');
-	};
-	reader.readAsDataURL(file);
-}
-
-function deletePfp() {
-	user.pfp = '';
-	const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
-	document.getElementById('profilePfpPreview').src = fb;
-	updateMyThumb();
-	toast('Profile photo removed');
-}
-
-async function saveProfile() {
-	const name = document.getElementById('profileNameInput').value.trim();
-	if (!name) { toast('Name cannot be empty'); return; }
-	const email = document.getElementById('profileEmailInput').value.trim();
-	const phone = document.getElementById('profilePhoneInput').value.trim();
-	const status = document.getElementById('profileStatusInput').value.trim();
-	await api({ action: 'updateProfile', oldEmail: user.email, name, email, phone, status, pfp: user.pfp||'' });
-	user.name = name; user.email = email; user.phone = phone; user.status = status;
-	updateMyThumb();
-	toast('Profile saved ✓');
-}
-
-async function changePassword() {
-	const np = document.getElementById('newPassInput').value;
-	const cp = document.getElementById('confirmPassInput').value;
-	if (!np) { toast('Enter a new password'); return; }
-	if (np !== cp) { toast("Passwords don't match"); return; }
-	if (np.length < 6) { toast('Password must be at least 6 characters'); return; }
-	await api({ action: 'updateProfile', oldEmail: user.email, password: np });
-	toast('Password updated ✓');
-	document.getElementById('newPassInput').value = '';
-	document.getElementById('confirmPassInput').value = '';
-}
-
-// =================== ADMIN – USERS ===================
+// =================== ADMIN ===================
 async function loadAdminUsers() {
 	const res = await api({ action: 'getProfiles' });
 	allUsers = res.profiles || [];
+	updateAdminBadge();
 	renderAdminUsers();
 }
 
@@ -1542,21 +1369,42 @@ function renderAdminUsers() {
 	const list = allUsers.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
 	const tbody = document.getElementById('adminUsersTbody');
 	if (!list.length) { tbody.innerHTML = `<tr><td colspan="6" class="no-results">No users found</td></tr>`; return; }
-	tbody.innerHTML = list.map((u, i) => `<tr>
-		<td><div style="display:flex;align-items:center;gap:8px">
-			<img src="${esc(u.pfp)||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff`}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff'">
-			<span style="font-weight:600">${esc(u.name)}</span>
-		</div></td>
-		<td class="muted" style="font-size:12px">${esc(u.email||'')}</td>
-		<td class="muted" style="font-size:12px">${esc(u.job||'')}</td>
-		<td class="muted" style="font-size:12px">${esc(u.phone||'')}</td>
-		<td><span class="badge ${(u.type||u.role||'user').toLowerCase()==='admin'?'badge-admin':'badge-user'}">${esc((u.type||u.role||'user'))}</span></td>
-		<td><div style="display:flex;gap:6px">
-			<button class="btn btn-sm" onclick='editUserRow(${i})'><i data-lucide="pencil"></i></button>
-			<button class="btn btn-sm btn-danger" onclick='deleteUserRow("${esc(u.name)}", "${esc(u.email)}")'><i data-lucide="trash-2"></i></button>
-		</div></td>
-	</tr>`).join('');
+	
+	// Sort so Pending users appear at the top
+	tbody.innerHTML = list.sort((a,b) => (a.role === 'pending' ? -1 : 1)).map((u, i) => {
+		const isPending = u.role === 'pending';
+		return `<tr>
+			<td><div style="display:flex;align-items:center;gap:8px">
+				<img src="${esc(u.pfp)||`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff`}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff'">
+				<span style="font-weight:600">${esc(u.name)}</span>
+			</div></td>
+			<td class="muted" style="font-size:12px">${esc(u.email||'')}</td>
+			<td class="muted" style="font-size:12px">${esc(u.job||'')}</td>
+			<td class="muted" style="font-size:12px">${esc(u.phone||'')}</td>
+			<td><span class="badge ${isPending ? 'badge-pending' : (u.role==='admin'?'badge-admin':'badge-user')}">${isPending ? 'Pending' : esc(u.role)}</span></td>
+			<td>
+				${isPending 
+					? `<button class="btn btn-sm btn-prim" onclick='approveUserRow("${esc(u.email)}")'>Approve</button>`
+					: `<div style="display:flex;gap:6px">
+						<button class="btn btn-sm" onclick='editUserRow("${esc(u.email)}")'><i data-lucide="pencil"></i></button>
+						<button class="btn btn-sm btn-danger" onclick='deleteUserRow("${esc(u.name)}", "${esc(u.email)}")'><i data-lucide="trash-2"></i></button>
+					   </div>`
+				}
+			</td>
+		</tr>`
+	}).join('');
 	lucide.createIcons();
+}
+
+async function approveUserRow(email) {
+	if (!confirm('Approve this account request?')) return;
+	const res = await api({ action: 'approveUser', email });
+	if (res.status === 'success') {
+		toast('Account Approved!');
+		loadAdminUsers(); // Refresh the list & badge
+	} else {
+		toast('Failed to approve: ' + (res.message || ''));
+	}
 }
 
 function openUserForm(prefill) {
@@ -1573,10 +1421,9 @@ function openUserForm(prefill) {
 	wrap.scrollIntoView({ behavior:'smooth' });
 }
 
-function editUserRow(i) {
-	const q = (document.getElementById('adminUserSearch').value||'').toLowerCase();
-	const list = allUsers.filter(u => (u.name||'').toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q));
-	openUserForm(list[i]);
+function editUserRow(email) {
+	const userToEdit = allUsers.find(u => u.email === email);
+	if (userToEdit) openUserForm(userToEdit);
 }
 
 async function saveUser() {
@@ -1589,35 +1436,29 @@ async function saveUser() {
 	const oldKey = document.getElementById('editUserKey').value;
 	const role = document.getElementById('adminUserRole').value || 'user';
 	if (oldKey) {
-		const payload = { action: 'updateProfile', oldEmail: oldKey, name, email: account, phone, job };
+		const payload = { action: 'updateProfile', oldEmail: oldKey, name, email: account, phone, job, role };
 		if (pass) payload.password = pass;
 		const res = await api(payload);
-		if (res.status === 'success' || res.status !== 'error') {
-			const idx = allUsers.findIndex(u => (u.email||u.name) === oldKey);
-			if (idx > -1) Object.assign(allUsers[idx], { name, email: account, phone, job });
-			toast('User updated ✓');
-		} else { toast('Update failed: ' + (res.message||'Unknown error')); return; }
+		if (res.status !== 'error') { toast('User updated ✓'); } 
+		else { toast('Update failed: ' + (res.message||'Unknown error')); return; }
 	} else {
 		if (!pass) { toast('Password is required for new users'); return; }
 		const res = await api({ action: 'addUser', type: role, name, email: account, password: pass, phone, job });
-		if (res.status === 'success' || res.status !== 'error') {
-			allUsers.push({ name, email: account, job, phone, type: role });
-			toast('User added ✓');
-		} else { toast('Failed to add user: ' + (res.message||'Unknown error')); return; }
+		if (res.status !== 'error') { toast('User added ✓'); } 
+		else { toast('Failed to add user: ' + (res.message||'Unknown error')); return; }
 	}
 	document.getElementById('adminUserFormWrap').style.display = 'none';
-	renderAdminUsers();
+	loadAdminUsers();
 }
 
 async function deleteUserRow(name, email) {
 	if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
 	await api({ action: 'deleteUser', name });
-	allUsers = allUsers.filter(u => u.name !== name);
-	renderAdminUsers();
+	loadAdminUsers();
 	toast('User deleted');
 }
 
-// =================== ADMIN – GROUPS ===================
+// Groups Admin
 async function loadAdminGroups() {
 	const res = await api({ action: 'getRooms' });
 	allGroups = res.rooms || [];
@@ -1635,7 +1476,7 @@ function renderAdminGroups() {
 		<td class="muted" style="font-size:12px">${(g.members||'').split(',').filter(x=>x.trim()).length} members</td>
 		<td class="muted" style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.description||'—')}</td>
 		<td><div style="display:flex;gap:6px">
-			<button class="btn btn-sm" onclick='editGroupRow(${i})'><i data-lucide="pencil"></i></button>
+			<button class="btn btn-sm" onclick='editGroupRow("${esc(g.name)}")'><i data-lucide="pencil"></i></button>
 			<button class="btn btn-sm btn-danger" onclick='deleteGroupRow("${esc(g.name)}")'><i data-lucide="trash-2"></i></button>
 		</div></td>
 	</tr>`).join('');
@@ -1651,15 +1492,12 @@ function openGroupForm(prefill) {
 	document.getElementById('adminGroupIcon').value = prefill ? (prefill.icon||'') : '';
 	document.getElementById('adminGroupDesc').value = prefill ? (prefill.description||'') : '';
 	document.getElementById('adminGroupRules').value = prefill ? (prefill.rules||'') : '';
-	document.getElementById('adminGroupPermAdd').value = 'admins';
-	document.getElementById('adminGroupPermRemove').value = 'admins';
 	wrap.scrollIntoView({ behavior:'smooth' });
 }
 
-function editGroupRow(i) {
-	const q = (document.getElementById('adminGroupSearch').value||'').toLowerCase();
-	const list = allGroups.filter(g => (g.name||'').toLowerCase().includes(q));
-	openGroupForm(list[i]);
+function editGroupRow(name) {
+	const groupToEdit = allGroups.find(g => g.name === name);
+	if (groupToEdit) openGroupForm(groupToEdit);
 }
 
 async function saveGroup() {
@@ -1671,28 +1509,20 @@ async function saveGroup() {
 	const oldKey = document.getElementById('editGroupKey').value;
 
 	if (oldKey) {
-		const res = await api({ action: 'adminEditRoom', oldName: oldKey, newName: name !== oldKey ? name : oldKey });
-		if (res.status !== 'error') {
-			const idx = allGroups.findIndex(g => g.name === oldKey);
-			if (idx > -1) Object.assign(allGroups[idx], { name, icon, description, rules });
-			toast('Group updated ✓');
-		} else { toast('Failed: ' + (res.message||'')); return; }
+		const res = await api({ action: 'adminEditRoom', oldName: oldKey, newName: name !== oldKey ? name : oldKey, icon, description, rules });
+		if (res.status !== 'error') { toast('Group updated ✓'); }
 	} else {
 		const res = await api({ action: 'addRoom', name, members: user.name, icon, description, rules });
-		if (res.status !== 'error') {
-			allGroups.push({ name, icon, description, rules, members: user.name });
-			toast('Group added ✓');
-		} else { toast('Failed: ' + (res.message||'')); return; }
+		if (res.status !== 'error') { toast('Group added ✓'); }
 	}
 	document.getElementById('adminGroupFormWrap').style.display = 'none';
-	renderAdminGroups();
+	loadAdminGroups();
 }
 
 async function deleteGroupRow(name) {
 	if (!confirm(`Delete group "${name}"?`)) return;
 	await api({ action: 'deleteRoom', name });
-	allGroups = allGroups.filter(g => g.name !== name);
-	renderAdminGroups();
+	loadAdminGroups();
 	toast('Group deleted');
 }
 
@@ -1703,8 +1533,12 @@ function toggleTheme() {
 	document.getElementById('darkModeToggle').checked = dark;
 	if (user) api({ action: 'updateProfile', oldEmail: user.email, theme: dark ? 'dark' : 'light' });
 }
-
-function applyThemeToggle(cb) { document.body.classList.toggle('theme-dark', cb.checked); }
+function applyThemeToggle(cb) { 
+	document.body.classList.toggle('theme-dark', cb.checked); 
+	if (user) {
+		api({ action: 'updateProfile', oldEmail: user.email, theme: cb.checked ? 'dark' : 'light' });
+	}
+}
 
 function showTab(sec) {
 	['chats','profile','settings','admin'].forEach(s => document.getElementById('tab-'+s)?.classList.remove('active'));
@@ -1724,7 +1558,6 @@ function switchAdminTab(tab) {
 }
 
 function openOverlay(id) { document.getElementById(id).classList.add('active'); lucide.createIcons(); }
-
 function closeOverlay(id) {
 	document.getElementById(id).classList.remove('active');
 	const tabModals = { profileModal:'chats', appSettingsModal:'chats', adminModal:'chats' };
@@ -1734,14 +1567,51 @@ function closeOverlay(id) {
 	}
 }
 
-// =================== CHAT INFO ===================
+// =================== PROFILE LOGIC ===================
+function openProfilePanel() {
+	document.getElementById('profilePfpPreview').src = user.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+	document.getElementById('profileNameInput').value = user.name || '';
+	document.getElementById('profileEmailInput').value = user.email || '';
+	document.getElementById('profilePhoneInput').value = user.phone || '';
+	document.getElementById('profileStatusInput').value = user.status || '';
+	openOverlay('profileModal');
+}
+
+function handlePfpUpload(input) {
+	const file = input.files[0]; if (!file) return;
+	const reader = new FileReader();
+	reader.onload = e => {
+		user.pfp = e.target.result;
+		document.getElementById('profilePfpPreview').src = e.target.result;
+		updateMyThumb(); toast('Photo ready — Save Changes to apply');
+	};
+	reader.readAsDataURL(file);
+}
+
+function deletePfp() {
+	user.pfp = '';
+	document.getElementById('profilePfpPreview').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+	updateMyThumb(); toast('Profile photo removed');
+}
+
+async function saveProfile() {
+	const name = document.getElementById('profileNameInput').value.trim();
+	if (!name) { toast('Name cannot be empty'); return; }
+	const email = document.getElementById('profileEmailInput').value.trim();
+	const phone = document.getElementById('profilePhoneInput').value.trim();
+	const status = document.getElementById('profileStatusInput').value.trim();
+	await api({ action: 'updateProfile', oldEmail: user.email, name, email, phone, status, pfp: user.pfp||'' });
+	user.name = name; user.email = email; user.phone = phone; user.status = status;
+	updateMyThumb(); toast('Profile saved ✓');
+}
+
+// =================== CHAT INFO & GROUPS ===================
 function openChatInfo() {
 	if (!partner) return;
 	if (isRoom) openGroupSettings();
 	else openUserView(partner);
 }
 
-// =================== USER PROFILE VIEW ===================
 function openUserView(name) {
 	const profile = allUsers.find(u => u.name === name) || { name };
 	document.getElementById('viewPfp').src = profile.pfp || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
@@ -1750,25 +1620,20 @@ function openUserView(name) {
 	document.getElementById('viewMsgBtn').dataset.name = name;
 	document.getElementById('viewMsgBtn').style.display = (user && name === user.name) ? 'none' : 'flex';
 	const rows = [];
-	if (profile.job)      rows.push({ icon: 'briefcase', text: profile.job });
-	if (profile.email)    rows.push({ icon: 'mail',      text: profile.email });
-	if (profile.phone)    rows.push({ icon: 'phone',     text: profile.phone });
-	if (profile.lastSeen) rows.push({ icon: 'clock',     text: 'Last seen ' + profile.lastSeen });
-	document.getElementById('viewInfoRows').innerHTML = rows.map(r =>
-		`<div class="profile-info-row"><i data-lucide="${r.icon}"></i><span>${esc(r.text)}</span></div>`
-	).join('');
+	if (profile.job) rows.push({ icon: 'briefcase', text: profile.job });
+	if (profile.email) rows.push({ icon: 'mail', text: profile.email });
+	if (profile.phone) rows.push({ icon: 'phone', text: profile.phone });
+	if (profile.lastSeen) rows.push({ icon: 'clock', text: 'Last seen ' + profile.lastSeen });
+	document.getElementById('viewInfoRows').innerHTML = rows.map(r => `<div class="profile-info-row"><i data-lucide="${r.icon}"></i><span>${esc(r.text)}</span></div>`).join('');
 	openOverlay('userViewModal');
 }
 
 function startChatFromView() {
-	const name = document.getElementById('viewMsgBtn').dataset.name;
+	startChat(document.getElementById('viewMsgBtn').dataset.name, false);
 	closeOverlay('userViewModal');
-	startChat(name, false);
 }
 
-// =================== GROUP SETTINGS ===================
 let currentGroupData = null;
-
 async function openGroupSettings() {
 	const freshRes = await api({ action: 'getRooms' });
 	if (freshRes.rooms) allGroups = freshRes.rooms;
@@ -1777,47 +1642,36 @@ async function openGroupSettings() {
 	document.getElementById('gsIcon').textContent = g.icon || '👥';
 	document.getElementById('gsName').textContent = g.name || partner;
 	document.getElementById('gsDesc').textContent = g.description || '';
+	
 	const rulesWrap = document.getElementById('gsRulesWrap');
 	if (g.rules) { rulesWrap.style.display = 'block'; document.getElementById('gsRules').textContent = g.rules; }
 	else rulesWrap.style.display = 'none';
+	
 	const memberNames = (g.members || '').split(',').map(m => m.trim()).filter(Boolean);
 	const creatorName = memberNames[0] || '';
-	const isSysAdmin = user && (user.type||'').toLowerCase() === 'admin';
+	const isSysAdmin = user && (user.type||user.role||'').toLowerCase() === 'admin';
 	const isGroupAdmin = user && user.name === creatorName;
-	const permAdd    = g.permAddMembers    || 'admins';
-	const permRemove = g.permRemoveMembers || 'admins';
-	const canAdd    = isSysAdmin || isGroupAdmin || permAdd === 'all';
-	const canRemove = isSysAdmin || isGroupAdmin || permRemove === 'all';
-	const membersList = document.getElementById('gsMembersList');
-	membersList.innerHTML = memberNames.length
-		? memberNames.map((m, idx) => {
-			const isCreator = idx === 0;
-			const canRemoveThis = canRemove && m !== user.name;
-			return `<div class="member-chip">
-				<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m)}&background=007aff&color=fff" onerror="this.src='https://ui-avatars.com/api/?name=U&background=007aff&color=fff'">
-				<span class="member-chip-name" style="cursor:pointer" onclick="openUserViewFromGroup('${esc(m)}')">${esc(m)}</span>
-				${isCreator ? '<span class="member-chip-role">Admin</span>' : ''}
-				${canRemoveThis ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px;min-width:0" onclick="removeMemberFromGroup('${esc(m)}')"><i data-lucide="x"></i></button>` : ''}
-			</div>`;
-		}).join('')
-		: '<div class="no-results">No members listed</div>';
-	document.getElementById('gsAddMemberBtn').style.display = canAdd ? 'flex' : 'none';
-	const isAdmin = isSysAdmin || isGroupAdmin;
+	
+	document.getElementById('gsMembersList').innerHTML = memberNames.length ? memberNames.map((m, idx) => {
+		const canRemoveThis = (isSysAdmin || isGroupAdmin) && m !== user.name;
+		return `<div class="member-chip">
+			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m)}&background=007aff&color=fff">
+			<span class="member-chip-name" style="cursor:pointer" onclick="closeOverlay('groupSettingsModal');openUserView('${esc(m)}')">${esc(m)}</span>
+			${idx === 0 ? '<span class="member-chip-role">Admin</span>' : ''}
+			${canRemoveThis ? `<button class="btn btn-sm btn-danger" style="padding:4px 8px;min-width:0" onclick="removeMemberFromGroup('${esc(m)}')"><i data-lucide="x"></i></button>` : ''}
+		</div>`;
+	}).join('') : '<div class="no-results">No members listed</div>';
+	
+	document.getElementById('gsAddMemberBtn').style.display = (isSysAdmin || isGroupAdmin) ? 'flex' : 'none';
+	
 	const editSection = document.getElementById('gsEditSection');
-	if (isAdmin) {
+	if (isSysAdmin || isGroupAdmin) {
 		editSection.style.display = 'block';
 		document.getElementById('gsEditIcon').value = g.icon || '';
 		document.getElementById('gsEditDesc').value = g.description || '';
 		document.getElementById('gsEditRules').value = g.rules || '';
-	} else {
-		editSection.style.display = 'none';
-	}
+	} else { editSection.style.display = 'none'; }
 	openOverlay('groupSettingsModal');
-}
-
-function openUserViewFromGroup(name) {
-	closeOverlay('groupSettingsModal');
-	openUserView(name);
 }
 
 async function saveGroupSettings() {
@@ -1825,62 +1679,35 @@ async function saveGroupSettings() {
 	const icon  = document.getElementById('gsEditIcon').value.trim() || '👥';
 	const desc  = document.getElementById('gsEditDesc').value.trim();
 	const rules = document.getElementById('gsEditRules').value.trim();
-	await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name,
-		icon, description: desc, rules });
-	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
-	if (idx > -1) Object.assign(allGroups[idx], { icon, description: desc, rules });
-	currentGroupData = { ...currentGroupData, icon, description: desc, rules };
-	document.getElementById('gsIcon').textContent = icon;
-	document.getElementById('gsDesc').textContent = desc;
-	if (rules) { document.getElementById('gsRulesWrap').style.display='block'; document.getElementById('gsRules').textContent=rules; }
-	else document.getElementById('gsRulesWrap').style.display='none';
-	toast('Group updated ✓');
+	await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name, icon, description: desc, rules });
+	openGroupSettings(); toast('Group updated ✓');
 }
 
 async function removeMemberFromGroup(memberName) {
 	if (!currentGroupData || !confirm(`Remove ${memberName} from this group?`)) return;
 	const members = (currentGroupData.members||'').split(',').map(m=>m.trim()).filter(m=>m && m!==memberName);
 	const newMemberStr = members.join(',');
-	const res = await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name, members: newMemberStr });
-	if (res.status === 'error') { toast('Failed to remove: ' + (res.message||'')); return; }
-	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
-	if (idx > -1) allGroups[idx].members = newMemberStr;
-	currentGroupData.members = newMemberStr;
-	toast(`${memberName} removed`);
-	openGroupSettings();
+	await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name, members: newMemberStr });
+	toast(`${memberName} removed`); openGroupSettings();
 }
 
 async function deleteCurrentGroup() {
 	if (!currentGroupData || !confirm(`Delete group "${currentGroupData.name}"? This cannot be undone.`)) return;
 	await api({ action: 'deleteRoom', name: currentGroupData.name });
-	allGroups = allGroups.filter(g => g.name !== currentGroupData.name);
-	closeOverlay('groupSettingsModal');
-	closeChat();
-	fetchRecentChats();
-	toast('Group deleted');
+	closeOverlay('groupSettingsModal'); closeChat(); fetchRecentChats(); toast('Group deleted');
 }
 
-// =================== ADD MEMBER TO EXISTING GROUP ===================
+// ── Add Member to Existing Group ──
 let addMemberSelected = new Set();
-
-async function openAddMemberPicker() {
+function openAddMemberPicker() {
 	addMemberSelected = new Set();
 	document.getElementById('addMemberSearch').value = '';
-	if (!allUsers.length) {
-		const r = await api({ action: 'getProfiles' });
-		allUsers = r.profiles || [];
-	}
-	renderAddMemberList('');
-	openOverlay('addMemberModal');
+	renderAddMemberList(''); openOverlay('addMemberModal');
 }
-
 function renderAddMemberList(query) {
 	const q = (query||'').toLowerCase();
 	const currentMembers = (currentGroupData?.members||'').split(',').map(m=>m.trim()).filter(Boolean);
-	const list = allUsers.filter(u =>
-		!currentMembers.includes(u.name) &&
-		(!q || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
-	);
+	const list = allUsers.filter(u => u.role !== 'pending' && !currentMembers.includes(u.name) && (!q || (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)));
 	const container = document.getElementById('addMemberList');
 	if (!list.length) { container.innerHTML = '<div class="no-results">No users to add</div>'; return; }
 	container.innerHTML = list.map(u => `
@@ -1890,53 +1717,61 @@ function renderAddMemberList(query) {
 			<div><div class="mpn">${esc(u.name)}</div><div class="mps">${esc(u.status||u.job||'')}</div></div>
 		</div>`).join('');
 }
-
 function toggleAddMember(name, row) {
 	const cb = row.querySelector('input[type=checkbox]');
 	if (addMemberSelected.has(name)) { addMemberSelected.delete(name); cb.checked = false; }
 	else { addMemberSelected.add(name); cb.checked = true; }
 }
-
 async function confirmAddMembers() {
 	if (!addMemberSelected.size) { toast('Select at least one member'); return; }
 	const current = (currentGroupData?.members||'').split(',').map(m=>m.trim()).filter(Boolean);
 	const updated = [...new Set([...current, ...addMemberSelected])].join(',');
-	const res = await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name, members: updated });
-	if (res.status === 'error') { toast('Failed to add members: ' + (res.message||'')); return; }
-	const idx = allGroups.findIndex(g => g.name === currentGroupData.name);
-	if (idx > -1) allGroups[idx].members = updated;
-	currentGroupData.members = updated;
-	closeOverlay('addMemberModal');
-	toast(`${addMemberSelected.size} member(s) added ✓`);
-	openGroupSettings();
+	await api({ action: 'adminEditRoom', oldName: currentGroupData.name, newName: currentGroupData.name, members: updated });
+	closeOverlay('addMemberModal'); toast(`${addMemberSelected.size} member(s) added ✓`); openGroupSettings();
 }
 
-// =================== NEW GROUP MEMBER PICKER ===================
-let newGroupSelected = new Set();
+// =================== NEW CHAT MODALS ===================
+function openNewChatModal() {
+	document.getElementById('newChatSearch').value = '';
+	newGroupSelected = new Set();
+	document.getElementById('newGroupSelectedWrap').style.display = 'none';
+	searchNewChatUsers(''); openOverlay('newChatModal');
+}
+function switchNewChatTab(tab) {
+	document.getElementById('newDirectTab').style.display = tab === 'direct' ? 'block' : 'none';
+	document.getElementById('newGroupTab').style.display = tab === 'group' ? 'block' : 'none';
+	document.getElementById('ncTab-direct').classList.toggle('active', tab === 'direct');
+	document.getElementById('ncTab-group').classList.toggle('active', tab === 'group');
+	tab === 'group' ? renderNewGroupMemberPicker('') : searchNewChatUsers('');
+}
+function searchNewChatUsers(val) {
+	const q = val.toLowerCase();
+	const list = allUsers.filter(p => p.role !== 'pending' && p.name !== user.name && (!q || (p.name||'').toLowerCase().includes(q) || (p.email||'').toLowerCase().includes(q)));
+	document.getElementById('newChatUserResults').innerHTML = list.length ? list.map(u => `
+		<div class="row" onclick="startChat('${esc(u.name)}', false); closeOverlay('newChatModal')">
+			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff" class="avatar" style="width:40px;height:40px">
+			<div><div style="font-weight:600">${esc(u.name)}</div><div class="muted" style="font-size:12px">${esc(u.status||u.job||'')}</div></div>
+		</div>`).join('') : '<div class="no-results">No active users found</div>';
+}
 
+let newGroupSelected = new Set();
 function renderNewGroupMemberPicker(query) {
 	const q = (query||'').toLowerCase();
-	const list = allUsers.filter(u =>
-		u.name !== (user?.name) && (!q || u.name.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
-	);
-	const container = document.getElementById('newGroupMemberList');
-	if (!list.length) { container.innerHTML = '<div class="no-results" style="padding:12px">No users found</div>'; return; }
-	container.innerHTML = list.map(u => `
+	const list = allUsers.filter(u => u.role !== 'pending' && u.name !== user?.name && (!q || u.name.toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)));
+	document.getElementById('newGroupMemberList').innerHTML = list.length ? list.map(u => `
 		<div class="member-pick-item" onclick="toggleNewGroupMember('${esc(u.name)}', this)">
 			<input type="checkbox" id="ngmc-${esc(u.name)}" ${newGroupSelected.has(u.name)?'checked':''}>
 			<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=007aff&color=fff">
 			<div><div class="mpn">${esc(u.name)}</div><div class="mps">${esc(u.status||u.job||'')}</div></div>
-		</div>`).join('');
+		</div>`).join('') : '<div class="no-results" style="padding:12px">No active users found</div>';
 	updateNewGroupChips();
 }
-
 function toggleNewGroupMember(name, row) {
 	const cb = row.querySelector('input[type=checkbox]');
 	if (newGroupSelected.has(name)) { newGroupSelected.delete(name); cb.checked = false; }
 	else { newGroupSelected.add(name); cb.checked = true; }
 	updateNewGroupChips();
 }
-
 function updateNewGroupChips() {
 	const wrap = document.getElementById('newGroupSelectedWrap');
 	const chips = document.getElementById('newGroupSelectedChips');
@@ -1948,27 +1783,28 @@ function updateNewGroupChips() {
 		</span>`
 	).join('');
 }
-
 function removeNewGroupMember(name) {
 	newGroupSelected.delete(name);
-	const cb = document.getElementById('ngmc-' + name);
-	if (cb) cb.checked = false;
+	const cb = document.getElementById('ngmc-' + name); if (cb) cb.checked = false;
 	updateNewGroupChips();
+}
+
+async function createGroup() {
+	const name = document.getElementById('newGroupName').value.trim();
+	if (!name) { toast('Please enter a group name'); return; }
+	const icon  = document.getElementById('newGroupIcon').value.trim() || '👥';
+	const desc  = document.getElementById('newGroupDesc').value.trim();
+	const rules = document.getElementById('newGroupRules').value.trim();
+	const members = [user.name, ...[...newGroupSelected]].join(',');
+	const res = await api({ action: 'addRoom', name, members, icon, description: desc, rules });
+	if (res.status === 'success') {
+		toast('Group created! 🎉'); newGroupSelected = new Set(); closeOverlay('newChatModal');
+		api({ action: 'getRooms' }).then(r => { allGroups = r.rooms || []; fetchRecentChats(); });
+	} else { toast('Failed to create group: ' + (res.message||'')); }
 }
 
 lucide.createIcons();
 
-// ── Full-screen viewport fix for mobile browsers ──────────────────────────
-(function () {
-	function setVH() {
-		const vh = window.innerHeight * 0.01;
-		document.documentElement.style.setProperty('--real-vh', `${vh}px`);
-		document.documentElement.style.setProperty('--full-h', `${window.innerHeight}px`);
-	}
-	setVH();
-	window.addEventListener('resize', setVH);
-	window.addEventListener('orientationchange', () => setTimeout(setVH, 300));
-})();
 </script>
 </body>
 </html>
